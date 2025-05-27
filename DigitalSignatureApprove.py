@@ -78,8 +78,8 @@ def on_message(ws, message):
             },
             'regnum': REGNUM
         }
-    citizen = Service('https://xyp.gov.mn/citizen-1.5.0/ws?WSDL', timestamp, pkey_path=KEY_PATH)
-    citizen.dump('WS100101_getCitizenIDCardInfo', params)
+    citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL', timestamp, pkey_path=KEY_PATH)
+    citizen.dump('WS100202_getPropertyList', params)
 
 def on_error(ws, error):
     print(error)
