@@ -37,8 +37,8 @@ def CallXYPService(OTPNumber):
             },
             'regnum': REGNUM,
         }
-    citizen = Service('https://xyp.gov.mn/citizen-1.5.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
-    citizen.dump('WS100101_getCitizenIDCardInfo', params)
+    citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
+    citizen.dump('WS100202_getPropertyList', params)
 
 """
 OTP код авах WS100008_registerOTPRequest сервисийг ашиглаж WS100101_getCitizenIDCardInfo сервисийг ашиглах хүсэлтийг sms-ээр явуулах
