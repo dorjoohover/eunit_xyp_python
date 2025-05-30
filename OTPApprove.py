@@ -1,6 +1,6 @@
 from XypClient import Service
 from env import REGNUM
-import os
+from env import KEY_PATH
 import time
 
 
@@ -51,11 +51,10 @@ def OTPservice():
     params = {  
         
         }
-    key_path = os.getenv('KEY_PATH')
     timestamp = str(int(time.time()))
     params.update({'plateNumber': '5705УКМ'})
     try:
-        citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL', timestamp , pkey_path=key_path)
+        citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL', timestamp , pkey_path=KEY_PATH)
         res = citizen.dump('WS100401_getVehicleInfo', params)
         print(res)
     except Exception as e: 
