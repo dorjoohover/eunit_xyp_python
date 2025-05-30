@@ -49,16 +49,16 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 def OTPservice():
     params = {  
         'auth': {
-                # 'citizen': {
-                #     'certFingerprint': None,
-                #     'regnum': REGNUM,
-                #     'signature': None,
-                #     'appAuthToken': None,
-                #     'authAppName': None,                
-                #     'civilId': None,
-                #     'fingerprint': b'*** NO ACCESS ***',
-                #     'otp': 0,
-                # },
+                'citizen': {
+                    'certFingerprint': None,
+                    'regnum': REGNUM,
+                    'signature': None,
+                    'appAuthToken': None,
+                    'authAppName': None,                
+                    'civilId': None,
+                    'fingerprint': b'*** NO ACCESS ***',
+                    'otp': 0,
+                },
                 'operator': {
                     'appAuthToken': None,
                     'authAppName': None,
@@ -70,22 +70,23 @@ def OTPservice():
                     'signature': None
                 }
             },
-            'regnum': REGNUM,
-            'jsonWSList': "[{\"ws\":\"WS100101_getCitizenIDCardInfo\"}]",
-            'isSms': 1,
-            'isApp': 0,
-            'isEmail': 0,
-            'isKiosk': 0,
-            'phoneNum': 0,
+            # 'regnum': REGNUM,
+            # 'jsonWSList': "[{\"ws\":\"WS100101_getCitizenIDCardInfo\"}]",
+            # 'isSms': 1,
+            # 'isApp': 0,
+            # 'isEmail': 0,
+            # 'isKiosk': 0,
+            # 'phoneNum': 0,
         }
     citizen = Service('https://xyp.gov.mn/meta-1.5.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
-    citizen.dump('WS100008_registerOTPRequest', params)
+    citizen.dump('WS100106_authorizeCitizen', params)
     print("-----------------------------------------------------------")
     print("-----------------------------------------------------------")
-    OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
-    # CallXYPService(OTPMessageNumber)
+    # OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
+    
+    CallXYPService(0)
     
     
 if __name__ == "__main__":
-    CallXYPService(0)
+    OTPservice(0)
     
