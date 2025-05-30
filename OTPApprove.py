@@ -1,6 +1,6 @@
 from XypClient import Service
-from env import KEY_PATH
 from env import REGNUM
+import os
 import time
 
 
@@ -37,8 +37,9 @@ def CallXYPService(OTPNumber):
             },
             'regnum': REGNUM,
         }
-    citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
-    citizen.dump('WS100202_getPropertyList', params)
+    
+    # citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL', str(int(time.time())) , pkey_path=key_path)
+    # citizen.dump('WS100202_getPropertyList', params)
 
 """
 OTP код авах WS100008_registerOTPRequest сервисийг ашиглаж WS100101_getCitizenIDCardInfo сервисийг ашиглах хүсэлтийг sms-ээр явуулах
@@ -48,16 +49,17 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 """
 def OTPservice():
     params = {  
-        'plateNumber': '5705УКМ'
+        
         }
-    citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
-    citizen.dump('WS100401_getVehicleInfo', params)
-    print("-----------------------------------------------------------")
-    print("-----------------------------------------------------------")
-    # OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
-
-    # CallXYPService(0)
-    
+    key_path = os.getenv('KEY_PATH')
+    timestamp = str(int(time.time()))
+    params.update({'plateNumber': '5705УКМ'})
+    try:
+        citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL', timestamp , pkey_path=key_path)
+        res = citizen.dump('WS100401_getVehicleInfo', params)
+        print(res)
+    except Exception as e: 
+        print(e)
     
 if __name__ == "__main__":
     OTPservice()
