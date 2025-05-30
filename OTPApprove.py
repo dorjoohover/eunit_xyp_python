@@ -48,38 +48,10 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 """
 def OTPservice():
     params = {  
-        # 'auth': {
-        #         'citizen': {
-        #             'certFingerprint': None,
-        #             'regnum': REGNUM,
-        #             'signature': None,
-        #             'appAuthToken': None,
-        #             'authAppName': None,                
-        #             'civilId': None,
-        #             'fingerprint': b'*** NO ACCESS ***',
-        #             'otp': 0,
-        #         },
-        #         'operator': {
-        #             'appAuthToken': None,
-        #             'authAppName': None,
-        #             'certFingerprint': None,
-        #             'civilId': None,
-        #             'fingerprint': b'*** NO ACCESS ***',
-        #             'otp': 0,
-        #             'regnum': None,
-        #             'signature': None
-        #         }
-        #     },
-            # 'regnum': REGNUM,
-            # 'jsonWSList': "[{\"ws\":\"WS100101_getCitizenIDCardInfo\"}]",
-            # 'isSms': 1,
-            # 'isApp': 0,
-            # 'isEmail': 0,
-            # 'isKiosk': 0,
-            # 'phoneNum': 0,
+        'plateNumber': '5705УКМ'
         }
-    citizen = Service('https://xyp.gov.mn/meta-1.5.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
-    citizen.dump('WS100106_authorizeCitizen', params)
+    citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
+    citizen.dump('WS100401_getVehicleInfo', params)
     print("-----------------------------------------------------------")
     print("-----------------------------------------------------------")
     # OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
