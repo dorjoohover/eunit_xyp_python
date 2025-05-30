@@ -83,9 +83,9 @@ def OTPservice():
     print("-----------------------------------------------------------")
     print("-----------------------------------------------------------")
     OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
-    CallXYPService(OTPMessageNumber)
+    # CallXYPService(OTPMessageNumber)
     
     
 if __name__ == "__main__":
-    OTPservice()
+    CallXYPService(0)
     
