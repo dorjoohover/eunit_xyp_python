@@ -49,7 +49,16 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 """
 def OTPservice():
     params = {  
-        
+         'auth': {
+            'citizen': {
+                'authType': 1,       # OTP-аар баталгаажуулах бол 1, fingerprint бол 0
+                'regnum': REGNUM,
+                'otp': 0,            # код асуухгүй бол 0
+            },
+            'operator': {
+                'authType': 0,
+            },
+        },
         }
     timestamp = str(int(time.time()))
     params.update({'plateNumber': '5705УКМ'})
