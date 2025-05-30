@@ -48,28 +48,28 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 """
 def OTPservice():
     params = {  
-        'auth': {
-                'citizen': {
-                    'certFingerprint': None,
-                    'regnum': REGNUM,
-                    'signature': None,
-                    'appAuthToken': None,
-                    'authAppName': None,                
-                    'civilId': None,
-                    'fingerprint': b'*** NO ACCESS ***',
-                    'otp': 0,
-                },
-                'operator': {
-                    'appAuthToken': None,
-                    'authAppName': None,
-                    'certFingerprint': None,
-                    'civilId': None,
-                    'fingerprint': b'*** NO ACCESS ***',
-                    'otp': 0,
-                    'regnum': None,
-                    'signature': None
-                }
-            },
+        # 'auth': {
+        #         'citizen': {
+        #             'certFingerprint': None,
+        #             'regnum': REGNUM,
+        #             'signature': None,
+        #             'appAuthToken': None,
+        #             'authAppName': None,                
+        #             'civilId': None,
+        #             'fingerprint': b'*** NO ACCESS ***',
+        #             'otp': 0,
+        #         },
+        #         'operator': {
+        #             'appAuthToken': None,
+        #             'authAppName': None,
+        #             'certFingerprint': None,
+        #             'civilId': None,
+        #             'fingerprint': b'*** NO ACCESS ***',
+        #             'otp': 0,
+        #             'regnum': None,
+        #             'signature': None
+        #         }
+        #     },
             # 'regnum': REGNUM,
             # 'jsonWSList': "[{\"ws\":\"WS100101_getCitizenIDCardInfo\"}]",
             # 'isSms': 1,
