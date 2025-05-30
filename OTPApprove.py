@@ -14,23 +14,23 @@ OTP авах амжилттай болсон тохиолдолд иргэнд �
 def CallXYPService(OTPNumber):
     params = {  
         'auth': {
-                'citizen': {
-                    'certFingerprint': None,
-                    'regnum': REGNUM,
-                    'signature': None,
-                    'appAuthToken': None,
-                    'authAppName': None,                
-                    'civilId': None,
-                    'fingerprint': b'*** NO ACCESS ***',
-                    'otp': OTPNumber,
-                },
+                # 'citizen': {
+                #     'certFingerprint': None,
+                #     'regnum': REGNUM,
+                #     'signature': None,
+                #     'appAuthToken': None,
+                #     'authAppName': None,                
+                #     'civilId': None,
+                #     'fingerprint': b'*** NO ACCESS ***',
+                #     'otp': OTPNumber,
+                # },
                 'operator': {
                     'appAuthToken': None,
                     'authAppName': None,
                     'certFingerprint': None,
                     'civilId': None,
                     'fingerprint': b'*** NO ACCESS ***',
-                    'otp': 0,
+                    'otp': OTPNumber,
                     'regnum': None,
                     'signature': None
                 }
@@ -49,16 +49,16 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 def OTPservice():
     params = {  
         'auth': {
-                'citizen': {
-                    'certFingerprint': None,
-                    'regnum': REGNUM,
-                    'signature': None,
-                    'appAuthToken': None,
-                    'authAppName': None,                
-                    'civilId': None,
-                    'fingerprint': b'*** NO ACCESS ***',
-                    'otp': 0,
-                },
+                # 'citizen': {
+                #     'certFingerprint': None,
+                #     'regnum': REGNUM,
+                #     'signature': None,
+                #     'appAuthToken': None,
+                #     'authAppName': None,                
+                #     'civilId': None,
+                #     'fingerprint': b'*** NO ACCESS ***',
+                #     'otp': 0,
+                # },
                 'operator': {
                     'appAuthToken': None,
                     'authAppName': None,
