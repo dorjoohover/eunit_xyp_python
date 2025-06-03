@@ -109,6 +109,7 @@ if __name__ == "__main__":
     # 3) WS100401_getVehicleInfo-д зориулсан параметрууд
     params = {
         "plateNumber": plate_or_cabin,  # эсвэл cabinNumber хэрэглэж болно
+        'regnum': REGNUM,
         "auth": {
             "citizen": {
                 "authType": 0,      # WS schema шаардлагад dummy утга өгөхөд
