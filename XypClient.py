@@ -6,6 +6,7 @@ from zeep.transports import Transport
 from XypSign import XypSign
 from requests import Session
 import urllib3
+import time
 import subprocess
 from env import ACCESS_TOKEN, CERT_PATH, KEY_PATH, REGNUM
 
