@@ -2,7 +2,7 @@ import time
 from XypClient import Service
 from env import REGNUM, KEY_PATH, CERT_PATH
 
-def get_vehicle_info_with_otp(plate_or_cabin: str, otp_code: int):
+def get_vehicle_info_with_otp(plate_or_cabin: str):
     params = {}
     if len(plate_or_cabin) <= 7:
         # 7 тэмдэгт эсвэл бага = улсын дугаар гэж үзнэ
