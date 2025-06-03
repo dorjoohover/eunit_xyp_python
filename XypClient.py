@@ -65,6 +65,7 @@ class Service():
     def dump(self, operation, params=None):
         try:
             if params:
+                print(self.client.transport.session.headers)
                 response = self.client.service[operation](params)
                 print(response)
             else:
