@@ -32,11 +32,7 @@ class Service():
             'timeStamp' : timestamp,
             'signature' : self.__signature
         })
-        print({
-            'accessToken': self.__accessToken,
-            'timeStamp' : timestamp,
-            'signature' : self.__signature
-        })
+     
     
     def deep_convert_unicode(self, key, layer):
     
@@ -68,6 +64,7 @@ class Service():
     
     def dump(self, operation, params=None):
         try:
+            print(params)
             if params:
                 response = self.client.service[operation](params)
                 print(response)
