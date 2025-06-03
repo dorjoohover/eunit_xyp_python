@@ -105,7 +105,7 @@ if __name__ == "__main__":
         "plateNumber": plate_or_cabin,  # эсвэл cabinNumber хэрэглэж болно
         "auth": {
             "citizen": {
-                "authType": 1,      # WS schema шаардлагад dummy утга өгөхөд
+                "authType": 0,      # WS schema шаардлагад dummy утга өгөхөд
                 "regnum": REGNUM,
                 "otp": 0            # OTP flow хэрэглэхгүй тул 0
             },
