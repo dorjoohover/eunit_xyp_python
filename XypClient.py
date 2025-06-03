@@ -64,39 +64,9 @@ class Service():
     
     def dump(self, operation, params=None):
         try:
-            print({
-                    'request': {
-                        'auth': {
-                            'operator': {
-                                'authType': 0, 
-                                'signature': self.__signature
-                            },
-                            'citizen': {
-                                'authType': 0, 
-                                'signature': self.__signature
-                            }
-                        },
-                        'plateNumber': params['plateNumber']
-                    }
-                })
             if params:
-                response = self.client.service[operation]({
-                    'request': {
-                        'auth': {
-                            'operator': {
-                                'authType': 0, 
-                                'signature': self.__signature
-                            },
-                            'citizen': {
-                                'authType': 0, 
-                                'signature': self.__signature
-                            }
-                        },
-                        'plateNumber': params['plateNumber']
-                    }
-                })
+                response = self.client.service[operation](params)
                 print(response)
-                print(self.client.service[operation]())
             else:
                 print(self.client.service[operation]())
         except Exception as e:
