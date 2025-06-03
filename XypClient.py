@@ -66,10 +66,23 @@ class Service():
         try:
             print(params)
             if params:
-                response = self.client.service[operation](params)
+                response = self.client.service[operation]({
+                    'request': {
+                        'auth': {
+                            'operator': {
+                                'authType': 0, 
+                                'signature': self.__signature
+                            },
+                            'citizen': {
+                                'authType': 0, 
+                                'signature': self.__signature
+                            }
+                        },
+                        'plateNumber': params['plateNumber']
+                    }
+                })
                 print(response)
                 print(self.client.service[operation]())
-                return response
             else:
                 print(self.client.service[operation]())
         except Exception as e:

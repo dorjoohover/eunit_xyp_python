@@ -9,7 +9,7 @@ def get_vehicle_info_with_otp(plate_or_cabin: str):
         params["plateNumber"] = plate_or_cabin
     else:
         # урт>7 бол cabinNumber гэж үзнэ
-        params["cabinNumber"] = plate_or_cabin
+        params["plateNumber"] = plate_or_cabin
 
     # 2) Баталгаажуулалтын auth блокоо бүрдүүлнэ (OTP ашиглаж байгаа тул citizen талбар чухал)
     params["auth"] = {
