@@ -85,6 +85,7 @@ class Service():
         """
         try:
             if params:
+                print(params)
                 response = self.client.service[operation](params)
                 print(response)
                 return response
