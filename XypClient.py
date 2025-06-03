@@ -16,31 +16,21 @@ from env import ACCESS_TOKEN
 @since 2023-05-23
 """
 class Service():
-    def __init__(self, wsdl, timestamp, pkey_path=None, ckey_path=None):
+    def __init__(self, wsdl, timestamp, pkey_path=None):
         print("timestamp: ", timestamp)
         self.__accessToken = ACCESS_TOKEN
         self.__toBeSigned, self.__signature = XypSign(pkey_path).sign(self.__accessToken, timestamp)
         self.__signature = self.__signature
-        self.__toBeSigned, self.__certificate = XypSign(ckey_path).sign(self.__accessToken, timestamp)
-        self.__certificate = self.__certificate
-        print(self.__certificate)
         urllib3.disable_warnings()
         session = Session()
         session.verify = False
         transport = zeep.Transport(session=session)
     
         self.client = zeep.Client(wsdl, transport=transport)
-        print({
-            'accessToken': self.__accessToken,
-            'timeStamp' : timestamp,
-            'signature' : self.__signature,
-            'certFingerprint': self.__certificate
-        })
         self.client.transport.session.headers.update({
             'accessToken': self.__accessToken,
             'timeStamp' : timestamp,
-            'signature' : self.__signature,
-            'certFingerprint': self.__certificate
+            'signature' : self.__signature
         })
     
     def deep_convert_unicode(self, key, layer):
