@@ -21,8 +21,9 @@ class Service():
         self.__accessToken = ACCESS_TOKEN
         self.__toBeSigned, self.__signature = XypSign(pkey_path).sign(self.__accessToken, timestamp)
         self.__signature = self.__signature
-        self.__toBeSigned, self.__signature = XypSign(ckey_path).sign(self.__accessToken, timestamp)
-        self.__certificate = self.__signature
+        self.__toBeSigned, self.__certificate = XypSign(ckey_path).sign(self.__accessToken, timestamp)
+        self.__certificate = self.__certificate
+        print(self.__certificate)
         urllib3.disable_warnings()
         session = Session()
         session.verify = False
