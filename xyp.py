@@ -25,7 +25,6 @@ def get_vehicle_info_with_otp(plate_or_cabin: str):
         "https://xyp.gov.mn/transport-1.3.0/ws?WSDL",
         timestamp,
         pkey_path=KEY_PATH,
-        ckey_path=CERT_PATH   # хэрвээ XypClient Service-д private key өгөх шаардлагагүй бол None гэж өгөх
     )
     try:
         response = client.dump("WS100401_getVehicleInfo", params)
