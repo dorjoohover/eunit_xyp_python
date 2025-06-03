@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections.abc import Mapping
-import zeep, base64
+import zeep
+import base64
 from zeep import Client
 from zeep.transports import Transport
 from XypSign import XypSign
@@ -10,11 +11,13 @@ import time
 import subprocess
 from env import ACCESS_TOKEN, CERT_PATH, KEY_PATH, REGNUM
 
+
 class Service():
     def __init__(self, wsdl, timestamp, pkey_path=None):
         # ACCESS_TOKEN, timestamp ашиглан XypSign-аас гарын үсэг авч байна
         self.__accessToken = ACCESS_TOKEN
-        self.__toBeSigned, self.__signature = XypSign(pkey_path).sign(self.__accessToken, timestamp)
+        self.__toBeSigned, self.__signature = XypSign(
+            pkey_path).sign(self.__accessToken, timestamp)
 
         # SSL сэрэмжлүүлгийг хааж, Zeep Client-ээ үүсгэнэ
         urllib3.disable_warnings()
@@ -26,10 +29,11 @@ class Service():
         # HTTP Header-д ACCESS_TOKEN, timestamp, signature сэтгэлийг нэмнэ
         self.client.transport.session.headers.update({
             'accessToken': self.__accessToken,
-            'timeStamp'  : timestamp,
-            'signature'  : self.__signature
+            'timeStamp': timestamp,
+            'signature': self.__signature
         })
-        print("Сервер лүү явуулж буй HTTP Session:", self.client.transport.session)
+        print("Сервер лүү явуулж буй HTTP Session:",
+              self.client.transport.session)
 
     def deep_convert_unicode(self, key, layer):
         # ... (үгүүсгэсэн)
@@ -42,7 +46,7 @@ class Service():
         except AttributeError:
             pass
         return to_ret
-        
+
     def deep_convert_dict(self, layer):
         # ... (үгүүсгэсэн)
         to_ret = layer
@@ -54,7 +58,7 @@ class Service():
         except AttributeError:
             pass
         return to_ret
-    
+
     def dump(self, operation, params=None):
         try:
             if params:
@@ -68,6 +72,7 @@ class Service():
             print(operation, "– алдаа:", str(e))
             return None
 
+
 def compute_cert_fingerprint(cert_path: str) -> str:
     """
     Сертификатын SHA256 fingerprint-ийг colon-гүй, бүх жижиг үсгээрх HEX утгаар буцаана.
@@ -80,6 +85,7 @@ def compute_cert_fingerprint(cert_path: str) -> str:
     raw = proc.stdout.decode().strip()
     hex_fp = raw.split("=", 1)[1].replace(":", "").lower()
     return hex_fp
+
 
 if __name__ == "__main__":
     import sys
@@ -107,7 +113,9 @@ if __name__ == "__main__":
             "citizen": {
                 "authType": 0,      # WS schema шаардлагад dummy утга өгөхөд
                 "regnum": REGNUM,
-                "otp": 0            # OTP flow хэрэглэхгүй тул 0
+                "otp": 0,  # OTP flow хэрэглэхгүй тул 0
+                "certFingerprint": cert_fingerprint,
+                "signature": signature_b64,
             },
             "operator": {
                 "authType": 0,                 # сертификат+signature flow
@@ -121,6 +129,7 @@ if __name__ == "__main__":
     }
 
     # 4) Service-ээ үүсгэн, dump дуудах
-    svc = Service("https://xyp.gov.mn/transport-1.3.0/ws?WSDL", timestamp, KEY_PATH)
+    svc = Service("https://xyp.gov.mn/transport-1.3.0/ws?WSDL",
+                  timestamp, KEY_PATH)
     resp = svc.dump("WS100401_getVehicleInfo", params)
     print("Хариу:", resp)
