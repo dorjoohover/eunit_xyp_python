@@ -66,7 +66,7 @@ class Service():
         try:
             if params:
                 print(self.client.transport.session.headers)
-                print(self.client.service)
+                print(self.client.service[operation])
                 response = self.client.service[operation](params)
                 print(response)
             else:
