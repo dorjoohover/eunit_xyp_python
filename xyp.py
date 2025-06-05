@@ -7,8 +7,7 @@ from xml.etree import ElementTree as ET
 
 from env import (
     ACCESS_TOKEN,
-    CERT_PATH, KEY_PATH, REGNUM,
-    OPERATOR_CERT_PATH, OPERATOR_KEY_PATH, OPERATOR_REGNUM
+    CERT_PATH, KEY_PATH, REGNUM
 )
 from XypSign import XypSign
 
@@ -29,8 +28,7 @@ timestamp = str(int(time.time() * 1000))
 signer_citizen = XypSign(KEY_PATH)
 _, sig_citizen = signer_citizen.sign(ACCESS_TOKEN, timestamp)
 
-signer_operator = XypSign(OPERATOR_KEY_PATH)
-_, sig_operator = signer_operator.sign(ACCESS_TOKEN, timestamp)
+
 
 # 시민 인증을 위한 SHA1 fingerprint (openssl x509 -in <path> -noout -fingerprint -sha1)
 # Колонуусгүйгээр зурагласан утга:
@@ -83,7 +81,7 @@ ET.SubElement(citizen_el, "authAppName").text     = ""
 operator_el = ET.SubElement(auth_el, "operator")
 ET.SubElement(operator_el, "authType").text        = "0"
 ET.SubElement(operator_el, "certFingerprint").text = operator_fingerprint
-ET.SubElement(operator_el, "regnum").text          = OPERATOR_REGNUM
+ET.SubElement(operator_el, "regnum").text          = ""
 ET.SubElement(operator_el, "signature").text       = sig_operator.decode() if isinstance(sig_operator, bytes) else sig_operator
 ET.SubElement(operator_el, "civilId").text         = ""
 ET.SubElement(operator_el, "fingerprint").text     = ""  # сервер шаардлагагүй
