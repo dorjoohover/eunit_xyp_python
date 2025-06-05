@@ -1,4 +1,4 @@
-# soap_otp_client.py
+# soap_otp_vehicle_client.py
 # -*- coding: utf-8 -*-
 
 import time
@@ -9,67 +9,62 @@ from env import ACCESS_TOKEN, CERT_PATH, KEY_PATH, REGNUM
 from XypSign import XypSign
 
 # --------------------------------------------------------------------------------
-# 1. Тохиргоо: WSDL URL-ууд болон namespaces
+# 1. WSDL URL-ууд ба SOAP endpoint-ууд
 # --------------------------------------------------------------------------------
-META_WSDL_URL          = "https://xyp.gov.mn/meta-1.5.0/ws?WSDL"
-TRANSPORT_WSDL_URL     = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
-META_SOAP_ENDPOINT     = META_WSDL_URL.replace("?WSDL", "")
+META_WSDL_URL         = "https://xyp.mn/meta-1.5.0/ws?WSDL"
+TRANSPORT_WSDL_URL    = "https://xyp.mn/transport-1.3.0/ws?WSDL"
+META_SOAP_ENDPOINT    = META_WSDL_URL.replace("?WSDL", "")
 TRANSPORT_SOAP_ENDPOINT = TRANSPORT_WSDL_URL.replace("?WSDL", "")
 
-NS_SOAP = "http://schemas.xmlsoap.org/soap/envelope/"
-NS_META = "http://meta.xyp.gov.mn/"          # Meta service-ийн targetNamespace
-NS_TRANS = "http://transport.xyp.gov.mn/"    # Transport service-ийн targetNamespace
+# Namespace-үүд (WSDL-д заасан targetNamespace)
+NS_SOAP   = "http://schemas.xmlsoap.org/soap/envelope/"
+NS_META   = "http://meta.xyp.gov.mn/"
+NS_TRANS  = "http://transport.xyp.gov.mn/"
 
 # --------------------------------------------------------------------------------
-# 2. Утгууд: Иргэний мэдээлэл ба хувьсагчид
-# --------------------------------------------------------------------------------
-# Иргэний сертификатын SHA1 fingerprint:
-#   openssl x509 -in /root/xyp/certificate.crt -noout -fingerprint -sha1
-#   → SHA1 Fingerprint=95:B3:A8:2A:5A:E6:4C:20:8C:FA:ED:0D:56:B7:56:3C
-#   → Колонуусгүйгээр: "95B3A82A5AE64C208CFAED0D56B7563C"
+# 2. Иргэний сертификатын SHA1 fingerprint (колонуусгүй)
+#    openssl x509 -in /root/xyp/certificate.crt -noout -fingerprint -sha1
+#    → SHA1 Fingerprint=95:B3:A8:2A:5A:E6:4C:20:8C:FA:ED:0D:56:B7:56:3C
+#    → Колонуусгүйгээр: "95B3A82A5AE64C208CFAED0D56B7563C"
 CITIZEN_FINGERPRINT = "95B3A82A5AE64C208CFAED0D56B7563C"
 
-# OTP авахад ашиглах JSON форматын WS жагсаалт:
-#  WS100008_registerOTPRequest-д jsonWSList = "[{\"ws\":\"WS100401_getVehicleInfo\"}]"
-WS_LIST_JSON = "[{\"ws\":\"WS100401_getVehicleInfo\"}]"
-
-# Машины улсын дугаар (WS100401_getVehicleInfo-д ашиглана)
+# Машины улсын дугаар (жишээ):
 PLATE_NUMBER = "5705УКМ"
 
 # --------------------------------------------------------------------------------
-# 3. Хэрэглэгчийн подпись үүсгэх функцийг бичнэ
+# 3. Подпись үүсгэх функц
 # --------------------------------------------------------------------------------
 def generate_signature(pkey_path: str, access_token: str, timestamp: str) -> str:
     """
-    XypSign ашиглан ACCESS_TOKEN + timestamp дээр подпись үүсгэнэ (base64).
+    XypSign ашиглан ACCESS_TOKEN + timestamp дээр SHA256withRSA подпись үүсгэж,
+    base64-ээр буцаана.
     """
     signer = XypSign(pkey_path)
     _, signature = signer.sign(access_token, timestamp)
-    # Хэрвээ байт массив буцсан бол .decode()
     return signature.decode() if isinstance(signature, bytes) else signature
 
 # --------------------------------------------------------------------------------
-# 4. WS100008_registerOTPRequest – SOAP хүсэлт илгээх
+# 4. WS100008_registerOTPRequest – SOAP хүсэлт илгээх (OTP авах)
 # --------------------------------------------------------------------------------
 def request_otp():
     """
-    WS100008_registerOTPRequest үйлдлээр OTP (SMS) илгээх.
-    Хариу болон HTTP статус кодыг буцаана.
+    WS100008_registerOTPRequest үйлдлээр OTP (SMS) илгээх Soap хүсэлт илгээж,
+    HTTP статус ба raw response XML-г буцаана.
     """
-    # 4.1. timestamp болон подпись үүсгэх
+    # 4.1. timestamp ба подпись үүсгэх
     timestamp = str(int(time.time() * 1000))
     signature = generate_signature(KEY_PATH, ACCESS_TOKEN, timestamp)
 
-    # 4.2. HTTP header-д хавсаргах утгууд
+    # 4.2. HTTP header-үүд
     headers = {
-        "Content-Type":  "text/xml; charset=utf-8",
-        "SOAPAction":    "http://meta.xyp.gov.mn/WS100008_registerOTPRequest",
-        "accessToken":   ACCESS_TOKEN,
-        "timeStamp":     timestamp,
-        "signature":     signature
+        "Content-Type": "text/xml; charset=utf-8",
+        "SOAPAction":   f"{NS_META}WS100008_registerOTPRequest",
+        "accessToken":  ACCESS_TOKEN,
+        "timeStamp":    timestamp,
+        "signature":    signature
     }
 
-    # 4.3. SOAP XML бүтцийг ElementTree ашиглан үүсгэж байна
+    # 4.3. SOAP Envelope үүсгэх
     envelope = ET.Element(
         "soapenv:Envelope",
         {
@@ -83,7 +78,7 @@ def request_otp():
     # 4.4. Үйлдэл: <met:WS100008_registerOTPRequest>
     operation = ET.SubElement(body, "met:WS100008_registerOTPRequest")
 
-    # 4.5. auth блокоор citizen талын мэдээлэл
+    # 4.5. auth блокоор citizen талын мэдээлэл (OTP авах үед otp=0)
     auth_el = ET.SubElement(operation, "auth")
     citizen_el = ET.SubElement(auth_el, "citizen")
     ET.SubElement(citizen_el, "authType").text        = "1"  # 1 = OTP ашиглана
@@ -94,21 +89,21 @@ def request_otp():
     ET.SubElement(citizen_el, "fingerprint").text     = ""
     ET.SubElement(citizen_el, "appAuthToken").text    = ""
     ET.SubElement(citizen_el, "authAppName").text     = ""
-    ET.SubElement(citizen_el, "otp").text             = "0"  # Өмнө хоосон
+    ET.SubElement(citizen_el, "otp").text             = "0"
 
     # 4.6. Бусад талбарууд
     ET.SubElement(operation, "regnum").text       = REGNUM
-    ET.SubElement(operation, "jsonWSList").text   = WS_LIST_JSON
+    ET.SubElement(operation, "jsonWSList").text   = "[{\"ws\":\"WS100401_getVehicleInfo\"}]"
     ET.SubElement(operation, "isSms").text        = "1"
     ET.SubElement(operation, "isApp").text        = "0"
     ET.SubElement(operation, "isEmail").text      = "0"
     ET.SubElement(operation, "isKiosk").text      = "0"
-    ET.SubElement(operation, "phoneNum").text     = ""  # Хэрвээ утасны дугаар тусдаа шаардлагатай бол ерөнхий осгоно
+    ET.SubElement(operation, "phoneNum").text     = ""
 
     # 4.7. XML-ээ string болгон хөрвүүлэх
     xml_str = ET.tostring(envelope, encoding="utf-8", method="xml").decode()
 
-    # 4.8. SOAP хүсэлтийг илгээж, хариуг буцаах
+    # 4.8. HTTP POST хийж response авч буцаах
     response = requests.post(
         META_SOAP_ENDPOINT,
         data=xml_str.encode("utf-8"),
@@ -116,32 +111,30 @@ def request_otp():
         cert=(CERT_PATH, KEY_PATH),
         verify=False
     )
-
     return response.status_code, response.text
-plate_number = '5705УКМ'
+
 # --------------------------------------------------------------------------------
 # 5. WS100401_getVehicleInfo – SOAP хүсэлт илгээх (OTP ашиглан)
 # --------------------------------------------------------------------------------
 def get_vehicle_info_with_otp(otp_code: int):
     """
-    WS100401_getVehicleInfo үйлдлээр OTP-тай хамт машин мэдээлэл авах.
-    Хариу болон HTTP статус кодыг буцаана.
+    WS100401_getVehicleInfo үйлдлээр OTP-оор машин мэдээлэл авах Soap хүсэлт илгээж,
+    HTTP статус ба raw response XML-г буцаана.
     """
-    # 5.1. timestamp болон подпись (OTP-т неогор SIGNATURE байнга хоосон өгөгдсөн учир
-    #      header-д ACCESS_TOKEN+timestamp подпись хийж илгээж байна)
+    # 5.1. timestamp ба подпись үүсгэх
     timestamp = str(int(time.time() * 1000))
     signature = generate_signature(KEY_PATH, ACCESS_TOKEN, timestamp)
 
-    # 5.2. HTTP header-д хавсаргах утгууд
+    # 5.2. HTTP header-үүд
     headers = {
-        "Content-Type":  "text/xml; charset=utf-8",
-        "SOAPAction":    "http://transport.xyp.gov.mn/WS100401_getVehicleInfo",
-        "accessToken":   ACCESS_TOKEN,
-        "timeStamp":     timestamp,
-        "signature":     signature
+        "Content-Type": "text/xml; charset=utf-8",
+        "SOAPAction":   f"{NS_TRANS}WS100401_getVehicleInfo",
+        "accessToken":  ACCESS_TOKEN,
+        "timeStamp":    timestamp,
+        "signature":    signature
     }
 
-    # 5.3. SOAP XML бүтцийг ElementTree ашиглан үүсгэх
+    # 5.3. SOAP Envelope үүсгэх
     envelope = ET.Element(
         "soapenv:Envelope",
         {
@@ -155,7 +148,7 @@ def get_vehicle_info_with_otp(otp_code: int):
     # 5.4. Үйлдэл: <ser:WS100401_getVehicleInfo>
     operation = ET.SubElement(body, "ser:WS100401_getVehicleInfo")
 
-    # 5.5. auth блокоор citizen талын мэдээлэл (OTP ашиглагддаг)
+    # 5.5. auth блокоор citizen талын мэдээлэл (OTP-н код оруулна)
     auth_el = ET.SubElement(operation, "auth")
     citizen_el = ET.SubElement(auth_el, "citizen")
     ET.SubElement(citizen_el, "authType").text        = "1"  # 1 = OTP ашиглана
@@ -171,13 +164,13 @@ def get_vehicle_info_with_otp(otp_code: int):
     # 5.6. Бусад талбарууд
     ET.SubElement(operation, "cabinNumber").text      = ""
     ET.SubElement(operation, "certificatNumber").text = ""
-    ET.SubElement(operation, "plateNumber").text      = plate_number
+    ET.SubElement(operation, "plateNumber").text      = PLATE_NUMBER
     ET.SubElement(operation, "regnum").text           = REGNUM
 
     # 5.7. XML-ээ string болгон хөрвүүлэх
     xml_str = ET.tostring(envelope, encoding="utf-8", method="xml").decode()
 
-    # 5.8. SOAP хүсэлтийг илгээж, хариуг буцаах
+    # 5.8. HTTP POST хийж response авч буцаах
     response = requests.post(
         TRANSPORT_SOAP_ENDPOINT,
         data=xml_str.encode("utf-8"),
@@ -185,30 +178,72 @@ def get_vehicle_info_with_otp(otp_code: int):
         cert=(CERT_PATH, KEY_PATH),
         verify=False
     )
-
     return response.status_code, response.text
 
 # --------------------------------------------------------------------------------
-# 6. OTP авах үйлдлийг дуудах, дараа нь тэр OTP-оор машин мэдээлэл авах
+# 6. Алдааны (SOAP Fault) болон стандарт хариуг илүү ойлгомжтойгоор шалгаж хэвлэх
+# --------------------------------------------------------------------------------
+def print_response(status_code: int, raw_xml: str, service_ns: str, operation_name: str):
+    """
+    HTTP статус болон raw XML-г хэвлээд,
+    хэрвээ <soap:Fault> байвал faultcode, faultstring-г харуулна;
+    эсвэл operation_nameResponse→return→resultCode, resultMessage-г уншина.
+    """
+    print(f"HTTP статус код: {status_code}")
+    print("Raw response XML:")
+    print(raw_xml)
+    print("-" * 70)
+
+    try:
+        root = ET.fromstring(raw_xml)
+        ns = {"soapenv": NS_SOAP, "svc": service_ns}
+
+        # 6.1. SOAP Fault шалгах
+        fault_elem = root.find(".//soapenv:Fault", {"soapenv": NS_SOAP})
+        if fault_elem is not None:
+            faultcode   = fault_elem.find("faultcode").text if fault_elem.find("faultcode") is not None else ""
+            faultstring = fault_elem.find("faultstring").text if fault_elem.find("faultstring") is not None else ""
+            print("SOAP Fault илэрлээ:")
+            print("  faultcode   =", faultcode)
+            print("  faultstring =", faultstring)
+            return
+
+        # 6.2. Хэрвээ Fault үгүй бол стандарт хариу унших
+        resp_elem = root.find(f".//svc:{operation_name}Response", ns)
+        if resp_elem is not None:
+            return_el = resp_elem.find("return")
+            if return_el is not None:
+                result_code = return_el.find("resultCode").text if return_el.find("resultCode") is not None else ""
+                result_msg  = return_el.find("resultMessage").text if return_el.find("resultMessage") is not None else ""
+                print("Parsed resultCode   :", result_code)
+                print("Parsed resultMessage:", result_msg)
+                return
+
+        print(f"{operation_name}Response элемент олдсонгүй эсвэл return талбар дутуу байна.")
+    except ET.ParseError as pe:
+        print("XML парсинг хийхэд алдаа:", pe)
+
+# --------------------------------------------------------------------------------
+# 7. OTP авах, дараа нь User-ээс өгсөн OTP-н кодоор машин мэдээлэл авах
 # --------------------------------------------------------------------------------
 def main():
-    # 6.1. OTP авах хүсэлт илгээх
-    status_code, resp_text = request_otp()
-    print("OTP request HTTP status:", status_code)
-    print("OTP request response:\n", resp_text)
-    print("--------------------------------------------------")
+    # 7.1. OTP авах хүсэлт
+    status_otp, resp_otp = request_otp()
+    print_response(status_otp, resp_otp, NS_META, "WS100008_registerOTPRequest")
 
-    # 6.2. Иргэдэд ирсэн OTP кодыг асуух
-    try:
-        otp_code = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: ").strip())
-    except ValueError:
-        print("OTP бүртгэхэд алдаа: зөвхөн цифр оруулна уу.")
-        return
+    # 7.2. Хэрвээ OTP хүсэлт амжилттай (HTTP 200) буцаасан бол хэрэглэгчээс код асуух
+    if status_otp == 200:
+        try:
+            otp_code = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: ").strip())
+        except ValueError:
+            print("OTP код зөвхөн цифр байх ёстой.")
+            return
 
-    # 6.3. OTP кодоор машин мэдээлэл авах хүсэлт илгээх
-    status_code, resp_text = get_vehicle_info_with_otp(otp_code)
-    print("GetVehicleInfo HTTP status:", status_code)
-    print("GetVehicleInfo response:\n", resp_text)
+        # 7.3. OTP кодоор машин мэдээлэл авах хүсэлт илгээх
+        status_vehicle, resp_vehicle = get_vehicle_info_with_otp(otp_code)
+        print_response(status_vehicle, resp_vehicle, NS_TRANS, "WS100401_getVehicleInfo")
+    else:
+        print("OTP авахад амжилтгүй (HTTP статус код != 200).")
 
 if __name__ == "__main__":
     main()
