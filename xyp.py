@@ -9,7 +9,7 @@ from env import ACCESS_TOKEN, CERT_PATH, KEY_PATH, REGNUM
 from XypSign import XypSign
 
 # --------------------------------------------------------------------------------
-# 1. WSDL ба SOAP endpoint тодорхойлно
+# 1. WSDL ба SOAP endpoint
 # --------------------------------------------------------------------------------
 wsdl_url      = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
 soap_endpoint = wsdl_url.replace("?WSDL", "")
@@ -18,29 +18,31 @@ soap_endpoint = wsdl_url.replace("?WSDL", "")
 timestamp = str(int(time.time() * 1000))
 
 # --------------------------------------------------------------------------------
-# 2. ACCESS_TOKEN + timestamp дээр подпись (signature) үүсгэх (Citizen тал)
+# 2. ACCESS_TOKEN + timestamp дээр подпись үүсгэх (иргэн талын private key-ээр)
 # --------------------------------------------------------------------------------
 signer_citizen = XypSign(KEY_PATH)
 _, sig_citizen = signer_citizen.sign(ACCESS_TOKEN, timestamp)
 
-# Иргэний сертификатын SHA1 fingerprint:
+# Иргэний сертификатын SHA1 fingerprint
+# (жишээ):
 #   openssl x509 -in /root/xyp/certificate.crt -noout -fingerprint -sha1
 #   → SHA1 Fingerprint=95:B3:A8:2A:5A:E6:4C:20:8C:FA:ED:0D:56:B7:56:3C
-#   → Колонуусгүйгээр: 95B3A82A5AE64C208CFAED0D56B7563C
+#   → Колонуусгүйгээр: "95B3A82A5AE64C208CFAED0D56B7563C"
 citizen_fingerprint = "95B3A82A5AE64C208CFAED0D56B7563C"
 
-# Машины улсын дугаарын жишээ:
+# Машины улсын дугаар (жишээ):
 plate_number = "5705УКМ"
 
 # --------------------------------------------------------------------------------
-# 3. SOAP Request XML үүсгэх (зөвхөн citizen блок)
-#    - Namespace-г WSDL-д заасан targetNamespace = "http://transport.xyp.gov.mn/"
+# 3. SOAP Request XML үүсгэх (WSDL-д заасан wrapper-ийг яг тааруулна)
+#    – WSDL-д <wsdl:message name="WS100401_getVehicleInfo"> гэж байгааг анхаар.
+#    – targetNamespace = "http://transport.xyp.gov.mn/"
 # --------------------------------------------------------------------------------
 
 NS_SOAP = "http://schemas.xmlsoap.org/soap/envelope/"
 NS_SRVC = "http://transport.xyp.gov.mn/"
 
-# Envelope үүсгэх
+# Envelope
 envelope = ET.Element(
     "soapenv:Envelope",
     {
@@ -55,14 +57,11 @@ ET.SubElement(envelope, "soapenv:Header")
 # Body
 body = ET.SubElement(envelope, "soapenv:Body")
 
-# Үйлдэл (operation)
+# Үйлдэл: <ser:WS100401_getVehicleInfo>
 operation = ET.SubElement(body, "ser:WS100401_getVehicleInfo")
 
-# Request wrapper
-request_el = ET.SubElement(operation, "request")
-
-# auth блокоор citizen талын мэдээлэл дамжуулна
-auth_el = ET.SubElement(request_el, "auth")
+# 3.1. auth блокоор citizen талын мэдээлэл дамжуулна
+auth_el = ET.SubElement(operation, "auth")
 
 citizen_el = ET.SubElement(auth_el, "citizen")
 ET.SubElement(citizen_el, "authType").text        = "0"
@@ -76,19 +75,18 @@ ET.SubElement(citizen_el, "fingerprint").text     = ""
 ET.SubElement(citizen_el, "appAuthToken").text    = ""
 ET.SubElement(citizen_el, "authAppName").text     = ""
 
-# Бусад талбарууд
-ET.SubElement(request_el, "cabinNumber").text      = ""
-ET.SubElement(request_el, "certificatNumber").text = ""
-ET.SubElement(request_el, "plateNumber").text      = plate_number
-ET.SubElement(request_el, "regnum").text           = REGNUM
+# 3.2. Бусад аргументууд (wrapper дотор шууд)
+ET.SubElement(operation, "cabinNumber").text      = ""
+ET.SubElement(operation, "certificatNumber").text = ""
+ET.SubElement(operation, "plateNumber").text      = plate_number
+ET.SubElement(operation, "regnum").text           = REGNUM
 
-# XML-ээ string болгон хөрвүүлэх
+# XML-ээ string болгож хөрвүүлэх
 xml_str = ET.tostring(envelope, encoding="utf-8", method="xml").decode()
 
 # --------------------------------------------------------------------------------
 # 4. HTTP headers бэлдэх
-#    - SOAPAction утга WSDL-д заасан яг утгатай таарах ёстой!
-#      Жишээ: <soap:operation soapAction="http://transport.xyp.gov.mn/WS100401_getVehicleInfo"/>
+#    – SOAPAction утгыг WSDL-д заасан утгатай яг тааруулна!
 # --------------------------------------------------------------------------------
 headers = {
     "Content-Type": "text/xml; charset=utf-8",
@@ -97,8 +95,8 @@ headers = {
 
 # --------------------------------------------------------------------------------
 # 5. SOAP хүсэлтээ илгээх
-#    - cert=(CERT_PATH, KEY_PATH) → Иргэний сертификат + private key
-#    - verify=False        → curl -k (–insecure) мэт SSL шалгалтыг түр тасална
+#    – cert=(CERT_PATH, KEY_PATH) → Иргэний сертификат + private key
+#    – verify=False → curl -k мэт SSL шалгалтыг түр тасалж холбогдоно
 # --------------------------------------------------------------------------------
 response = requests.post(
     soap_endpoint,
@@ -117,7 +115,7 @@ print("Response body:")
 print(response.text)
 
 # --------------------------------------------------------------------------------
-# 7. (Заавал шаардлагатай бол) XML парсинг хийж resultCode, resultMessage унших
+# 7. (Шаардлагатай бол) XML парсинг хийж resultCode, resultMessage унших
 # --------------------------------------------------------------------------------
 try:
     root = ET.fromstring(response.content)
