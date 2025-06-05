@@ -1,6 +1,6 @@
-from client import Service
+from Client import Service
 import time
-
+from env import KEY_PATH
 wsdl_url = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
 timestamp = str(int(time.time() * 1000))
 svc = Service(wsdl_url, timestamp, pkey_path=KEY_PATH)
