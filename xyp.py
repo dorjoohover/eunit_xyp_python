@@ -7,8 +7,8 @@ svc = Service(wsdl_url, timestamp, pkey_path=KEY_PATH)
 
 # жишээ operation-д дамжуулах параметр
 params = {
-    "param1": "value1",
-    "param2": "value2"
+    "plateNumber": "5705УКМ",
+
 }
 
 result = svc.dump("WS100401_getVehicleInfo", params)
