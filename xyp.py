@@ -1,4 +1,4 @@
-from Client import Service
+from client import Service
 import time
 from env import KEY_PATH
 wsdl_url = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
