@@ -1,4 +1,4 @@
-# soap_otp_vehicle_client.py
+# soap_otp_vehicle_client_fixed.py
 # -*- coding: utf-8 -*-
 
 import time
@@ -18,12 +18,12 @@ TRANSPORT_SOAP_ENDPOINT = TRANSPORT_WSDL_URL.replace("?WSDL", "")
 
 # --------------------------------------------------------------------------------
 # 2. Namespace-үүд (WSDL-д заасан targetNamespace-үүдийг яг тааруулна)
-#    – Meta služба-д targetNamespace нь "http://service.meta.xyp.gov.mn/"
-#    – Transport služба-д targetNamespace нь "http://service.transport.xyp.gov.mn/"
+#    – Meta үйлчилгээд targetNamespace = "http://meta.xyp.gov.mn/"
+#    – Transport үйлчилгээд targetNamespace = "http://transport.xyp.gov.mn/"
 # --------------------------------------------------------------------------------
 NS_SOAP   = "http://schemas.xmlsoap.org/soap/envelope/"
-NS_META   = "http://service.meta.xyp.gov.mn/"
-NS_TRANS  = "http://service.transport.xyp.gov.mn/"
+NS_META   = "http://meta.xyp.gov.mn/"
+NS_TRANS  = "http://transport.xyp.gov.mn/"
 
 # Машины улсын дугаар (жишээ)
 PLATE_NUMBER = "5705УКМ"
@@ -219,7 +219,7 @@ def print_response(status_code: int, raw_xml: str, service_ns: str, operation_na
             print("  faultstring =", faultstring)
             return
 
-        # 6.2. Хэрэв Fault үгүй бол стандарт хариу унших
+        # 6.2. Хэрвээ Fault үгүй бол стандарт хариу унших
         resp_elem = root.find(f".//svc:{operation_name}Response", ns)
         if resp_elem is not None:
             return_el = resp_elem.find("return")
