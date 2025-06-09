@@ -82,7 +82,7 @@ def OTPservice():
     citizen.dump('WS100008_registerOTPRequest', params)
     print("-----------------------------------------------------------")
     print("-----------------------------------------------------------")
-    OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
+    OTPMessageNumber = str(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
     CallXYPService(OTPMessageNumber)
     
     
