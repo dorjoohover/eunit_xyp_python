@@ -1,8 +1,7 @@
 from XypClient import Service
 from env import KEY_PATH
-from env import REGNUM, ACCESS_TOKEN
+from env import REGNUM
 import time
-from XypSign import XypSign
 
 
 """
@@ -12,92 +11,81 @@ OTP авах амжилттай болсон тохиолдолд иргэнд �
 @author unenbat
 @since 2023-05-23
 """
-timestamp = str(int(time.time() * 1000))
-
 def CallXYPService(OTPNumber):
-    signer_citizen = XypSign(KEY_PATH)
-    _, sig_citizen = signer_citizen.sign(ACCESS_TOKEN, timestamp)
-    params = {
+    params = {  
         'auth': {
-            'citizen': {
-                'certFingerprint': None,
-                'regnum': REGNUM,
-                'signature': "",
-                'appAuthToken': None,
-                'authAppName': None,
-                'civilId': "",
-                'fingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
-                'otp': OTPNumber,
+                'citizen': {
+                    'certFingerprint': None,
+                    'regnum': REGNUM,
+                    'signature': None,
+                    'appAuthToken': None,
+                    'authAppName': None,                
+                    'civilId': None,
+                    'fingerprint': b'*** NO ACCESS ***',
+                    'otp': OTPNumber,
+                },
+                'operator': {
+                    'appAuthToken': None,
+                    'authAppName': None,
+                    'certFingerprint': None,
+                    'civilId': None,
+                    'fingerprint': b'*** NO ACCESS ***',
+                    'otp': 0,
+                    'regnum': None,
+                    'signature': None
+                }
             },
-            'operator': {
-                'appAuthToken': None,
-                'authAppName': None,
-                'certFingerprint': None,
-                'civilId': None,
-                'fingerprint': "",
-                'otp': None,
-                'regnum': None,
-                'signature': None
-            }
-        },
-        'plateNumber': '5705УКМ',
-        'regnum': REGNUM
-    }
-    citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
-                      str(int(time.time())), pkey_path=KEY_PATH)
-    citizen.dump('WS100401_getVehicleInfo', params)
-
+            'regnum': REGNUM,
+        }
+    citizen = Service('https://xyp.mndc.gov.mn/transport/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
+    citizen.dump('WS100101_getCitizenIDCardInfo', params)
 
 """
-OTP код авах WS100008_registerOTPRequest сервисийг ашиглаж WS100401_getVehicleInfo сервисийг ашиглах хүсэлтийг sms-ээр явуулах
+OTP код авах WS100008_registerOTPRequest сервисийг ашиглаж WS100101_getCitizenIDCardInfo сервисийг ашиглах хүсэлтийг sms-ээр явуулах
 
 @author unenbat
 @since 2023-05-23
 """
-
-
 def OTPservice():
-    params = {
+    params = {  
         'auth': {
-            'citizen': {
-                'certFingerprint': None,
-                'regnum': REGNUM,
-                'signature': None,
-                'appAuthToken': None,
-                'authAppName': None,
-                'civilId': None,
-                'fingerprint': b'*** NO ACCESS ***',
-                'otp': 0,
+                'citizen': {
+                    'certFingerprint': None,
+                    'regnum': REGNUM,
+                    'signature': None,
+                    'appAuthToken': None,
+                    'authAppName': None,                
+                    'civilId': None,
+                    'fingerprint': b'*** NO ACCESS ***',
+                    'otp': 0,
+                },
+                'operator': {
+                    'appAuthToken': None,
+                    'authAppName': None,
+                    'certFingerprint': None,
+                    'civilId': None,
+                    'fingerprint': b'*** NO ACCESS ***',
+                    'otp': 0,
+                    'regnum': None,
+                    'signature': None
+                }
             },
-            'operator': {
-                'appAuthToken': None,
-                'authAppName': None,
-                'certFingerprint': None,
-                'civilId': None,
-                'fingerprint': b'*** NO ACCESS ***',
-                'otp': 0,
-                'regnum': None,
-                'signature': None
-            }
-        },
-        'regnum': REGNUM,
-        'jsonWSList': "[{\"ws\":\"WS100401_getVehicleInfo\"},{\"ws\":\"WS100202_getPropertyList\"} , {\"ws\":\"WS100201_getPropertyInfo\"}]",
-        'isSms': 1,
-        'isApp': 0,
-        'isEmail': 0,
-        'isKiosk': 0,
-        # 'phoneNum': 95992333,
-        'phoneNum': 0,
-        "plateNumber": '5705УКМ'
-    }
-    citizen = Service('https://xyp.gov.mn/meta-1.5.0/ws?WSDL',
-                      str(int(time.time())), pkey_path=KEY_PATH)
+            'regnum': REGNUM,
+            'jsonWSList': "[{\"ws\":\"WS100101_getCitizenIDCardInfo\"}]",
+            'isSms': 1,
+            'isApp': 0,
+            'isEmail': 0,
+            'isKiosk': 0,
+            'phoneNum': 0,
+        }
+    citizen = Service('https://xyp.gov.mn/meta-1.5.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
     citizen.dump('WS100008_registerOTPRequest', params)
     print("-----------------------------------------------------------")
     print("-----------------------------------------------------------")
     OTPMessageNumber = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: "))
     CallXYPService(OTPMessageNumber)
-
-
+    
+    
 if __name__ == "__main__":
     OTPservice()
+    
