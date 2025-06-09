@@ -81,7 +81,7 @@ def OTPservice():
             }
         },
         'regnum': REGNUM,
-        'jsonWSList': "[{\"ws\":\"WS100401_getVehicleInfo\"}]",
+        'jsonWSList': "[{\"ws\":\"WS100401_getVehicleInfo\"},{\"ws\":\"WS100202_getPropertyList\"} , {\"ws\":\"WS100201_getPropertyInfo\"}]",
         'isSms': 1,
         'isApp': 0,
         'isEmail': 0,
