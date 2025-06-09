@@ -37,7 +37,7 @@ def CallXYPService(OTPNumber):
             },
             'regnum': REGNUM,
         }
-    citizen = Service('https://xyp.mndc.gov.mn/transport/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
+    citizen = Service('https://xyp.gov.mn/citizen-1.5.0/ws?WSDL', str(int(time.time())) , pkey_path=KEY_PATH)
     citizen.dump('WS100101_getCitizenIDCardInfo', params)
 
 """
