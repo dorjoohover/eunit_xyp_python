@@ -74,7 +74,22 @@ class Service:
             print(operation, str(e))
 
 
-params = { 'regnum': REGNUM}
+params = {
+    'auth': {
+        'citizen': {
+                'certFingerprint': None,
+                'regnum': REGNUM,
+                'signature': "",
+                'appAuthToken': None,
+                'authAppName': None,
+                'civilId': "",
+                'fingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
+                # 'otp': OTPNumber,
+            },
+    },
+    
+    
+     'regnum': REGNUM}
 
 citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL',
                   accesstoken=ACCESS_TOKEN, pkey_path=KEY_PATH)
