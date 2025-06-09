@@ -74,7 +74,7 @@ class Service:
             print(operation, str(e))
 
 
-params = {'plateNumber': "5705УКМ"}
+params = {'plateNumber': "5705УКМ", 'regnum': REGNUM}
 
 citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
                   accesstoken=ACCESS_TOKEN, pkey_path=KEY_PATH)
