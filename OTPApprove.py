@@ -32,8 +32,8 @@ def CallXYPService(OTPNumber):
                 'certFingerprint': None,
                 'civilId': None,
                 'fingerprint': b'*** NO ACCESS ***',
-                'otp': 0,
-                'regnum': None,
+                'otp': OTPNumber,
+                'regnum': REGNUM,
                 'signature': None
             }
         },
