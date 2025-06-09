@@ -84,7 +84,7 @@ params = {
             'authAppName': None,
             'authType': 3,
             'civilId': "",
-            'certFingerprint': "39:25:E9:2A:F2:40:F9:36:A3:CE:19:CF:35:27:7A:70:02:D3:63:96",
+            'certFingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
             # 'otp': OTPNumber,
         }, 'operator': {
             'appAuthToken': None,
@@ -93,7 +93,7 @@ params = {
             'civilId': None,
             'fingerprint': b'*** NO ACCESS ***',
             'otp': 0,
-            'certFingerprint': "39:25:E9:2A:F2:40:F9:36:A3:CE:19:CF:35:27:7A:70:02:D3:63:96",
+            'certFingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
             'regnum': None,
             'signature': None
         }
