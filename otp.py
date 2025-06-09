@@ -11,11 +11,9 @@ from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 from env import REGNUM, CERT_PATH, KEY_PATH, ACCESS_TOKEN
-
-
 class XypSign:
     def __init__(self, KeyPath):
-        self.KeyPath = KeyPath
+        self.KeyPath = KeyPath 
 
     def __GetPrivKey(self):
         with open(self.KeyPath, "rb") as keyfile:
@@ -27,7 +25,7 @@ class XypSign:
             'timeStamp': self.__timestamp(),
         }
 
-    def __buildParam(self, toBeSigned):
+    def __buildParam(self, toBeSigned):        
         return toBeSigned['accessToken'] + '.' + toBeSigned['timeStamp']
 
     def sign(self, accessToken):
@@ -41,17 +39,14 @@ class XypSign:
     def __timestamp(self):
         return str(int(time.time()))
 
-
 class Service:
     def __init__(self, wsdl, accesstoken, pkey_path=None, ca_cert_path=None):
         self.__accessToken = accesstoken
-        self.__toBeSigned, self.__signature = XypSign(
-            pkey_path).sign(self.__accessToken)
+        self.__toBeSigned, self.__signature = XypSign(pkey_path).sign(self.__accessToken)
         urllib3.disable_warnings()
         session = Session()
         if ca_cert_path:
-            # SSL CA cert path (жишээ нь: 'ca_cert.pem')
-            session.verify = ca_cert_path
+            session.verify = ca_cert_path   # SSL CA cert path (жишээ нь: 'ca_cert.pem')
         else:
             session.verify = False          # WARNING: Зөвхөн test орчинд хэрэглэ!
         transport = Transport(session=session)
@@ -76,41 +71,19 @@ class Service:
             print(operation, str(e))
             return None
 
-
 # -------------------------------
 # Доор test/run хэсэг
 if __name__ == "__main__":
-    wsdlurl = 'https://xyp.gov.mn/property-1.3.0/ws?WSDL'  # жишээ wsdl
-    accesstoken = ACCESS_TOKEN     # test token (жинхэнэ бол өөрийн токен)
+    wsdlurl = 'https://xyp.gov.mn/meta-1.5.0/ws?WSDL'  # жишээ wsdl
+    # wsdlurl = 'https://xyp.gov.mn/property-1.3.0/ws?WSDL'  # жишээ wsdl
+    accesstoken =   ACCESS_TOKEN     # test token (жинхэнэ бол өөрийн токен)
     keypath = KEY_PATH                              # Приват key зам (PEM)
     # ca_cert_path = 'ca_cert.pem'                          # Хэрвээ SSL CA cert шаардвал path оруул
 
-    # дуудмаар байгаа service-ийн нэр
-    servicename = 'WS100202_getPropertyList'
-    params = {
-        'auth': {
-            'citizen': {
-                'certFingerprint': '3925E92AF240F936A3CE19CF35277A7002D36396',  # таны cert fingerprint
-                'regnum': 'ИХ97070415',      # иргэний регистрийн дугаар
-                # XML digital signature (sign() function-аар гарна)
-                'signature': '...',
-                'civilId': 'ИХ97070415',     # ихэнхдээ регистр давхар өгдөг
-                'fingerprint': '...',        # sign()–оор гарна
-                'otp': 0,
-                # бусад талбарууд ...
-            },
-            'operator': {
-                'certFingerprint': None,
-                'regnum': None,
-                'signature': None,
-                'civilId': None,
-                'fingerprint': None,
-                'otp': 0,
-            }
-        },
-        'regnum': 'ИХ97070415'
-    }                     # service-ийн parameter
+    servicename = 'WS100014_authServiceByCitizen'                # дуудмаар байгаа service-ийн нэр
+    # servicename = 'WS100202_getPropertyList'                # дуудмаар байгаа service-ийн нэр
+    params = {'regnum': REGNUM}                       # service-ийн parameter
 
     # ca_cert_path өгч болох ба тест орчинд False-р болно
-    citizen = Service(wsdlurl, accesstoken, keypath)  # , ca_cert_path)
+    citizen = Service(wsdlurl, accesstoken, keypath)  #, ca_cert_path) 
     citizen.dump(servicename, params)
