@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     servicename = 'WS100014_authServiceByCitizen'                # дуудмаар байгаа service-ийн нэр
     # servicename = 'WS100202_getPropertyList'                # дуудмаар байгаа service-ийн нэр
-    params = {'regnum': REGNUM}                       # service-ийн parameter
+    params = {'regnum': REGNUM, 'phoneNum': 95992333, "serviceInfo": 'WS100202_getPropertyList'}                       # service-ийн parameter
 
     # ca_cert_path өгч болох ба тест орчинд False-р болно
     citizen = Service(wsdlurl, accesstoken, keypath)  #, ca_cert_path) 
