@@ -23,7 +23,9 @@ class XypSign:
 
     def __GetPrivKey(self):
         with open(self.KeyPath, "rb") as keyfile:
-            return RSA.importKey(keyfile.read())
+            rb =  RSA.importKey(keyfile.read())
+            print(rb)
+            return rb
 
     def __toBeSigned(self, accessToken):
         return {
@@ -74,35 +76,8 @@ class Service:
             print(operation, str(e))
 
 
-params = {
-    'auth': {
-        'citizen': {
-            'certFingerprint': None,
-            'regnum': REGNUM,
-            'signature': "",
-            'appAuthToken': None,
-            'authAppName': None,
-            'authType': 3,
-            'civilId': "",
-            "fingerprint": b"3925E92AF240F936A3CE19CF35277A7002D36396",
-            'certFingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
-            # 'otp': OTPNumber,
-        }, 'operator': {
-            'appAuthToken': None,
-            'authAppName': None,
-            "fingerprint": b"3925E92AF240F936A3CE19CF35277A7002D36396",
-            'certFingerprint': None,
-            'civilId': None,
-            'otp': 0,
-            'certFingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
-            'regnum': None,
-            'signature': None
-        }
-    },
+params = {'plateNumber': "5705УКМ"}
 
-
-    'regnum': REGNUM}
-
-citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL',
+citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
                   accesstoken=ACCESS_TOKEN, pkey_path=KEY_PATH)
-citizen.dump("WS100202_getPropertyList", params)
+citizen.dump("WS100401_getVehicleInfo", params)
