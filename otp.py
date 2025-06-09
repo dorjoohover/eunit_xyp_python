@@ -77,20 +77,30 @@ class Service:
 params = {
     'auth': {
         'citizen': {
-                'certFingerprint': None,
-                'regnum': REGNUM,
-                'signature': "",
-                'appAuthToken': None,
-                'authAppName': None,
-                'authType': 3,
-                'civilId': "",
-                'certFingerprint':"39:25:E9:2A:F2:40:F9:36:A3:CE:19:CF:35:27:7A:70:02:D3:63:96",
-                # 'otp': OTPNumber,
-            },
+            'certFingerprint': None,
+            'regnum': REGNUM,
+            'signature': "",
+            'appAuthToken': None,
+            'authAppName': None,
+            'authType': 3,
+            'civilId': "",
+            'certFingerprint': "39:25:E9:2A:F2:40:F9:36:A3:CE:19:CF:35:27:7A:70:02:D3:63:96",
+            # 'otp': OTPNumber,
+        }, 'operator': {
+            'appAuthToken': None,
+            'authAppName': None,
+            'certFingerprint': None,
+            'civilId': None,
+            'fingerprint': b'*** NO ACCESS ***',
+            'otp': 0,
+            'certFingerprint': "39:25:E9:2A:F2:40:F9:36:A3:CE:19:CF:35:27:7A:70:02:D3:63:96",
+            'regnum': None,
+            'signature': None
+        }
     },
-    
-    
-     'regnum': REGNUM}
+
+
+    'regnum': REGNUM}
 
 citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL',
                   accesstoken=ACCESS_TOKEN, pkey_path=KEY_PATH)
