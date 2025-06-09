@@ -1,7 +1,8 @@
 from XypClient import Service
 from env import KEY_PATH
-from env import REGNUM
+from env import REGNUM, ACCESS_TOKEN
 import time
+from XypSign import XypSign
 
 
 """
@@ -11,19 +12,21 @@ OTP авах амжилттай болсон тохиолдолд иргэнд �
 @author unenbat
 @since 2023-05-23
 """
-
+timestamp = str(int(time.time() * 1000))
 
 def CallXYPService(OTPNumber):
+    signer_citizen = XypSign(KEY_PATH)
+    _, sig_citizen = signer_citizen.sign(ACCESS_TOKEN, timestamp)
     params = {
         'auth': {
             'citizen': {
-                'certFingerprint': None,
+                'certFingerprint': "95B3A82A5AE64C208CFAED0D56B7563C",
                 'regnum': REGNUM,
-                'signature': None,
+                'signature': sig_citizen.decode() if isinstance(sig_citizen, bytes) else sig_citizen,
                 'appAuthToken': None,
                 'authAppName': None,
-                'civilId': None,
-                'fingerprint': b'*** NO ACCESS ***',
+                'civilId': REGNUM,
+                'fingerprint': None,
                 'otp': OTPNumber,
             },
             'operator': {
@@ -31,9 +34,9 @@ def CallXYPService(OTPNumber):
                 'authAppName': None,
                 'certFingerprint': None,
                 'civilId': None,
-                'fingerprint': b'*** NO ACCESS ***',
-                'otp': OTPNumber,
-                'regnum': REGNUM,
+                'fingerprint': None,
+                'otp': None,
+                'regnum': None,
                 'signature': None
             }
         },
