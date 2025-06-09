@@ -1,98 +1,81 @@
-# otp_vehicle.py
-# -*- coding: utf-8 -*-
-
+# -- coding: utf-8 --
+from collections.abc import Mapping
+import zeep
+import base64
+from zeep import Client
+from zeep.transports import Transport
+from requests import Session
+import urllib3
+import argparse
+import json
+import os
 import time
-from XypClient import Service
-from env import KEY_PATH, REGNUM
-
-def request_otp():
-    timestamp = str(int(time.time() * 1000))
-    ws = Service("https://xyp.gov.mn/meta-1.5.0/ws?WSDL", timestamp, pkey_path=KEY_PATH)
-
-    params = {
-        'auth': {
-            'citizen': {
-                'authType':        1,
-                'certFingerprint': None,
-                'regnum':          REGNUM,
-                'signature':       None,
-                'civilId':         None,
-                'fingerprint':     b'*** NO ACCESS ***',
-                'appAuthToken':    None,
-                'authAppName':     None,
-                'otp':             0
-            },
-            'operator': {
-                'authType':        1,
-                'certFingerprint': None,
-                'regnum':          None,
-                'signature':       None,
-                'civilId':         None,
-                'fingerprint':     b'*** NO ACCESS ***',
-                'appAuthToken':    None,
-                'authAppName':     None,
-                'otp':             0
-            }
-        },
-        'regnum':     REGNUM,
-        'jsonWSList': '[{"ws":"WS100401_getVehicleInfo"}]',
-        'isSms':      1,
-        'isApp':      0,
-        'isEmail':    0,
-        'isKiosk':    0,
-        'phoneNum':   0
-    }
-
-    return ws.dump('WS100008_registerOTPRequest', params)
+from base64 import b64encode
+from Crypto.Hash import SHA256
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.PublicKey import RSA
+from env import ACCESS_TOKEN, KEY_PATH, REGNUM
 
 
-def get_vehicle_info(otp_code: int):
-    timestamp = str(int(time.time() * 1000))
-    ws = Service("https://xyp.gov.mn/transport-1.3.0/ws?WSDL", timestamp, pkey_path=KEY_PATH)
+class XypSign:
+    def __init__(self, KeyPath):
+        self.KeyPath = KeyPath
 
-    params = {
-        'auth': {
-            'citizen': {
-                'authType':        1,
-                'certFingerprint': None,
-                'regnum':          REGNUM,
-                'signature':       None,
-                'civilId':         None,
-                'fingerprint':     b'*** NO ACCESS ***',
-                'appAuthToken':    None,
-                'authAppName':     None,
-                'otp':             otp_code
-            },
-            'operator': {
-                'authType':        1,
-                'certFingerprint': None,
-                'regnum':          None,
-                'signature':       None,
-                'civilId':         None,
-                'fingerprint':     b'*** NO ACCESS ***',
-                'appAuthToken':    None,
-                'authAppName':     None,
-                'otp':             0
-            }
-        },
-        'cabinNumber':      None,
-        'certificatNumber': None,
-        'plateNumber':      '5705УКМ',
-        'regnum':           REGNUM
-    }
+    def __GetPrivKey(self):
+        with open(self.KeyPath, "rb") as keyfile:
+            return RSA.importKey(keyfile.read())
 
-    return ws.dump('WS100401_getVehicleInfo', params)
+    def __toBeSigned(self, accessToken):
+        return {
+            'accessToken': accessToken,
+            'timeStamp': self.__timestamp(),
+        }
+
+    def __buildParam(self, toBeSigned):
+        return toBeSigned['accessToken'] + '.' + toBeSigned['timeStamp']
+
+    def sign(self, accessToken):
+        toBeSigned = self.__toBeSigned(accessToken)
+        digest = SHA256.new()
+        digest.update(self.__buildParam(toBeSigned).encode('utf8'))
+        pkey = self.__GetPrivKey()
+        dd = b64encode(PKCS1_v1_5.new(pkey).sign(digest))
+        return toBeSigned, dd
+
+    def __timestamp(self):
+        return str(int(time.time()))
 
 
-if __name__ == "__main__":
-    # 1) OTP авах
-    otp_response = request_otp()
-    print("OTP request response:")
-    print(otp_response)
-    print("--------------------------------------------------")
+class Service:
+    def __init__(self, wsdl, accesstoken, pkey_path=None):
+        self.__accessToken = accesstoken
+        self.__toBeSigned, self.__signature = XypSign(
+            pkey_path).sign(self.__accessToken)
+        urllib3.disable_warnings()
+        session = Session()
+        session.verify = False
+        transport = Transport(session=session)
 
-    # 2) Хэрвээ OTP-г илгээсэн бол хэрэглэгчээс код асууж, машин мэдээлэл авах
-    otp_code = int(input("Иргэнд ирсэн OTP кодыг оруулна уу: ").strip())
-    vehicle_response = get_vehicle_info(otp_code)
-    print("Vehicle info response:")
-    print(vehicle_response)
+        self.client = Client(wsdl, transport=transport)
+        self.client.transport.session.headers.update({
+            'accessToken': self.__accessToken,
+            'timeStamp': self.__toBeSigned['timeStamp'],
+            'signature': self.__signature
+        })
+
+    def dump(self, operation, params=None):
+        try:
+            if params:
+                response = self.client.service[operation](params)
+                print(response)
+            else:
+                print(self.client.service[operation]())
+        except Exception as e:
+            print(operation, str(e))
+
+
+params = {'plateNumber': REGNUM}
+
+citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
+                  accesstoken=ACCESS_TOKEN, pkey_path=KEY_PATH)
+citizen.dump("WS100401_getVehicleInfo", params)
