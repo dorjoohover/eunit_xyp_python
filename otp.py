@@ -82,7 +82,7 @@ params = {
                 'signature': "",
                 'appAuthToken': None,
                 'authAppName': None,
-                'authType': 0,
+                'authType': 3,
                 'civilId': "",
                 'certFingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
                 # 'otp': OTPNumber,
