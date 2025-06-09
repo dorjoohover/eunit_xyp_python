@@ -24,7 +24,6 @@ class XypSign:
     def __GetPrivKey(self):
         with open(self.KeyPath, "rb") as keyfile:
             rb =  RSA.importKey(keyfile.read())
-            print(rb)
             return rb
 
     def __toBeSigned(self, accessToken):
