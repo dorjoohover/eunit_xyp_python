@@ -22,11 +22,11 @@ def CallXYPService(OTPNumber):
             'citizen': {
                 'certFingerprint': "95B3A82A5AE64C208CFAED0D56B7563C",
                 'regnum': REGNUM,
-                'signature': sig_citizen.decode() if isinstance(sig_citizen, bytes) else sig_citizen,
+                'signature': "",
                 'appAuthToken': None,
                 'authAppName': None,
-                'civilId': REGNUM,
-                'fingerprint': None,
+                'civilId': "",
+                'fingerprint': "95B3A82A5AE64C208CFAED0D56B7563C",
                 'otp': OTPNumber,
             },
             'operator': {
@@ -34,7 +34,7 @@ def CallXYPService(OTPNumber):
                 'authAppName': None,
                 'certFingerprint': None,
                 'civilId': None,
-                'fingerprint': None,
+                'fingerprint': "95B3A82A5AE64C208CFAED0D56B7563C",
                 'otp': None,
                 'regnum': None,
                 'signature': None
