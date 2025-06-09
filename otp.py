@@ -84,7 +84,7 @@ params = {
                 'authAppName': None,
                 'authType': 0,
                 'civilId': "",
-                # 'fingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
+                'certFingerprint': "3925E92AF240F936A3CE19CF35277A7002D36396",
                 # 'otp': OTPNumber,
             },
     },
