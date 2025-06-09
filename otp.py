@@ -76,7 +76,7 @@ class Service:
 if __name__ == "__main__":
     wsdlurl = 'https://xyp.gov.mn/property-1.3.0/ws?WSDL'  # жишээ wsdl
     accesstoken =   ACCESS_TOKEN     # test token (жинхэнэ бол өөрийн токен)
-    keypath = CERT_PATH                              # Приват key зам (PEM)
+    keypath = KEY_PATH                              # Приват key зам (PEM)
     # ca_cert_path = 'ca_cert.pem'                          # Хэрвээ SSL CA cert шаардвал path оруул
 
     servicename = 'WS100202_getPropertyList'                # дуудмаар байгаа service-ийн нэр
