@@ -38,6 +38,7 @@ def CallXYPService(OTPNumber):
             }
         },
         'plateNumber': '5705УКМ',
+        'regnum': REGNUM
     }
     citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
                       str(int(time.time())), pkey_path=KEY_PATH)
