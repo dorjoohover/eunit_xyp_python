@@ -15,25 +15,29 @@ OTP авах амжилттай болсон тохиолдолд иргэнд �
 
 def CallXYPService(OTPNumber):
     params = {
-
-        "auth": {
-            "citizen": {
-                "authType": 0,
-                "civilId": "",
-                "fingerprint": "*** NO ACCESS ***",
-                "otp": 0,
-                "regnum": REGNUM,
-                "signature": ""
+        'auth': {
+            'citizen': {
+                'certFingerprint': None,
+                'regnum': REGNUM,
+                'signature': None,
+                'appAuthToken': None,
+                'authAppName': None,
+                'civilId': None,
+                'fingerprint': b'*** NO ACCESS ***',
+                'otp': OTPNumber,
             },
-            "operator": {
-                "authType": 0,
-                "civilId": "",
-                "fingerprint": "*** NO ACCESS ***",
-                "otp": 0,
-                "regnum": REGNUM,
-                "signature": ""
-            }, },
-        "plateNumber": '5705УКМ'
+            'operator': {
+                'appAuthToken': None,
+                'authAppName': None,
+                'certFingerprint': None,
+                'civilId': None,
+                'fingerprint': b'*** NO ACCESS ***',
+                'otp': 0,
+                'regnum': None,
+                'signature': None
+            }
+        },
+        'plateNumber': '5705УКМ',
     }
     citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
                       str(int(time.time())), pkey_path=KEY_PATH)
@@ -78,7 +82,9 @@ def OTPservice():
         'isApp': 0,
         'isEmail': 0,
         'isKiosk': 0,
+        # 'phoneNum': 95992333,
         'phoneNum': 0,
+        "plateNumber": '5705УКМ'
     }
     citizen = Service('https://xyp.gov.mn/meta-1.5.0/ws?WSDL',
                       str(int(time.time())), pkey_path=KEY_PATH)
@@ -90,4 +96,4 @@ def OTPservice():
 
 
 if __name__ == "__main__":
-    CallXYPService(0)
+    OTPservice()
