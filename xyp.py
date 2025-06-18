@@ -8,7 +8,7 @@ params = {}
 params.update({"plateNumber": "0892УБЛ"})
 
 try:
-    key_path = os.getenv("KEY_PATH")
+    key_path = "/root/xyp/mykey.key"
     print("KEY_PATH: ", key_path)
 
     # if prod
