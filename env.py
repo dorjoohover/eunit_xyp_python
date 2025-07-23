@@ -3,3 +3,4 @@ CERT_PATH    = "certificate.crt"   # Хэрвээ .pem бол тухайн за�
 KEY_PATH     = "mykey.key"
 REGNUM="ИХ97070415"
 WEBSOCKETURL="ws://127.0.0.1:59001"
+ENVIRONMENT='prod'

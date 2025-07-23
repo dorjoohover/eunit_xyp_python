@@ -7,14 +7,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-"""
-OTP авах амжилттай болсон тохиолдолд иргэнд ирсэн кодыг ашиглаж сервис дуудах
-@param OTPNumber иргэний утсанд ирсэн баталгаажуулах код
-
-@author unenbat
-@since 2023-05-23
-"""
-
+key_path = os.getenv("KEY_PATH")
 
 def read_item(val: str = ""):
     if not val:
@@ -26,7 +19,6 @@ def read_item(val: str = ""):
         params.update({"cabinNumber": val})
 
     try:
-        key_path = os.getenv("KEY_PATH")
         print("KEY_PATH: ", key_path)
         if os.getenv("ENVIRONMENT") != "prod":
             return {
