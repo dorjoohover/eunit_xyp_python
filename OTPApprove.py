@@ -20,6 +20,9 @@ def CallXYPService():
         'regnum': REGNUM,
         'plateNumber': '5705УКМ'
     }
+    print(params)
+    print('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
+          str(int(time.time())), pkey_path=KEY_PATH)
     citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
                       str(int(time.time())), pkey_path=KEY_PATH)
     res = citizen.dump('WS100401_getVehicleInfo', params)
