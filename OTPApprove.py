@@ -20,6 +20,7 @@ def CallXYPService():
     params = {
         'auth': None,
         'regnum': REGNUM,
+        "plateNumber": '5705УКМ'
     }
     timestamp = str(int(time.time()))
 
