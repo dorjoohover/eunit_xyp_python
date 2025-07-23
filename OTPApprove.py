@@ -1,8 +1,8 @@
+
 from XypClient import Service
 from env import KEY_PATH
 from env import REGNUM
 import time
-import os
 
 
 """
@@ -15,20 +15,24 @@ OTP авах амжилттай болсон тохиолдолд иргэнд �
 
 
 def CallXYPService():
-    key_path = os.getenv("KEY_PATH")
-    print("KEY_PATH: ", key_path)
     params = {
         'auth': None,
         'regnum': REGNUM,
-        "plateNumber": '5705УКМ'
+        'plateNumber': '5705УКМ'
     }
-    timestamp = str(int(time.time()))
-
-    citizen = Service(
-        "https://xyp.gov.mn/transport-1.3.0/ws?WSDL", timestamp, pkey_path=KEY_PATH)
-    res = citizen.dump("WS100401_getVehicleInfo", params)
+    citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL',
+                      str(int(time.time())), pkey_path=KEY_PATH)
+    res = citizen.dump('WS100401_getVehicleInfo', params)
     print(res)
     return res
+
+
+"""
+OTP код авах WS100008_registerOTPRequest сервисийг ашиглаж WS100101_getCitizenIDCardInfo сервисийг ашиглах хүсэлтийг sms-ээр явуулах
+
+@author unenbat
+@since 2023-05-23
+"""
 
 
 if __name__ == "__main__":
