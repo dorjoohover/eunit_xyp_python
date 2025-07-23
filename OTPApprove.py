@@ -16,6 +16,7 @@ OTP авах амжилттай болсон тохиолдолд иргэнд �
 
 def CallXYPService():
     key_path = os.getenv("KEY_PATH")
+    print("KEY_PATH: ", key_path)
     params = {
         'auth': None,
         'regnum': REGNUM,
