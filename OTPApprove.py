@@ -8,7 +8,7 @@ import os
 
 load_dotenv()
 key_path = os.getenv("KEY_PATH")
-
+print(key_path)
 def read_item(val: str = ""):
     if not val:
         return {"code": 1},
