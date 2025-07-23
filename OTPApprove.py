@@ -24,7 +24,7 @@ def CallXYPService():
     timestamp = str(int(time.time()))
 
     citizen = Service(
-        "https://xyp.gov.mn/transport-1.3.0/ws?WSDL", timestamp, pkey_path=key_path)
+        "https://xyp.gov.mn/transport-1.3.0/ws?WSDL", timestamp, pkey_path=KEY_PATH)
     res = citizen.dump("WS100401_getVehicleInfo", params)
     print(res)
     return res
