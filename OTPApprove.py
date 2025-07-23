@@ -3,8 +3,10 @@ from XypClient import Service
 from env import KEY_PATH
 from env import REGNUM
 import time
+from dotenv import load_dotenv
 import os
 
+load_dotenv()
 """
 OTP авах амжилттай болсон тохиолдолд иргэнд ирсэн кодыг ашиглаж сервис дуудах
 @param OTPNumber иргэний утсанд ирсэн баталгаажуулах код
