@@ -93,4 +93,5 @@ OTP код авах WS100008_registerOTPRequest сервисийг ашигла�
 
 
 if __name__ == "__main__":
-    read_item('5705УКМ')
+    res = read_item('5705УКМ')
+    print(res)
