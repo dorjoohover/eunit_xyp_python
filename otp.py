@@ -14,7 +14,7 @@ from base64 import b64encode
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.PublicKey import RSA 
-from env import ACCESS_TOKEN, KEY_PATH
+from env import ACCESS_TOKEN, KEY_PATH, REGNUM
 class XypSign:
     def __init__(self, KeyPath):
         self.KeyPath = KeyPath 
@@ -66,7 +66,7 @@ class Service:
         except Exception as e:
             print( operation, str(e))
 
-params = { 'plateNumber':'5705УКМ'}
+params = { 'regnum':REGNUM}
 
-citizen = Service('https://xyp.gov.mn/transport-1.3.0/ws?WSDL', ACCESS_TOKEN, KEY_PATH)
-citizen.dump('WS100401_getVehicleInfo', params)
+citizen = Service('https://xyp.gov.mn/property-1.3.0/ws?WSDL', ACCESS_TOKEN, KEY_PATH)
+citizen.dump('WS100202_getPropertyList', params)
