@@ -15,4 +15,6 @@ zeep==4.2.1
 pycryptodome>=3.9.8
 websocket-client>=1.6.1
 cryptography>=3.4.8
+flask>=3.0.0
+gunicorn>=22.0.0
 
