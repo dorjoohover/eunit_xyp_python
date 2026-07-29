@@ -26,7 +26,7 @@ from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 
-from env import ACCESS_TOKEN, KEY_PATH
+from env import ACCESS_TOKEN, KEY_PATH, REGNUM
 
 urllib3.disable_warnings()
 
@@ -120,15 +120,28 @@ def vehicle():
         abort(400, description="Missing `num` field")
 
     num = str(body["num"])
+    # OTP flow ашиглаж байгаа бол дуудагч талаас (core/platform) дамжуулна;
+    # fingerprint flow-д certFingerprint/signature шаардлагатай (одоогоор
+    # дэмжигдээгүй, ESIGN client шаарддаг тул headless серверт тохиромжгүй).
+    otp_code = body.get("otp")
 
     if not ACCESS_TOKEN or not KEY_PATH:
         return jsonify({"error": "ACCESS_TOKEN or KEY_PATH is missing"}), 500
 
     params = {
-        "auth": None,
+        "auth": {
+            "citizen": {
+                "authType": 1 if otp_code else 0,  # OTP -> 1, fingerprint -> 0
+                "regnum": REGNUM,  # env.py-д өгсөн РД
+                "otp": otp_code,
+            },
+            "operator": {
+                "authType": 0,
+            },
+        },
         "cabinNumber": None,
         "certificatNumber": None,
-        "regnum": None,
+        "regnum": REGNUM,
     }
     if len(num) <= 7:
         params["plateNumber"] = num
