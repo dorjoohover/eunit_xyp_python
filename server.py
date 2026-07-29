@@ -16,6 +16,7 @@ import logging
 
 import urllib3
 from flask import Flask, request, jsonify, abort
+from flask.json.provider import DefaultJSONProvider
 from requests import Session
 from requests.exceptions import ConnectionError as ReqConnectionError
 from zeep import Client
@@ -53,6 +54,22 @@ XYP_ERROR_CODES = {
 def describe_xyp_code(code):
     code = str(code)
     return XYP_ERROR_CODES.get(code, "Тодорхойгүй ХУР код")
+
+
+def json_safe(value):
+    """zeep-ийн буцаадаг response дотор bytes (жишээ нь binary/масклагдсан
+    талбарууд) байж болох тул, JSON-д хөрвүүлэхээс өмнө рекурсивоор
+    string болгож ариутгана."""
+    if isinstance(value, bytes):
+        try:
+            return value.decode("utf-8")
+        except UnicodeDecodeError:
+            return b64encode(value).decode("ascii")
+    if isinstance(value, dict):
+        return {k: json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_safe(v) for v in value]
+    return value
 
 
 class XypSign:
@@ -105,7 +122,24 @@ class XypService:
         return self.client.service[operation]()
 
 
+class BytesSafeJSONProvider(DefaultJSONProvider):
+    """Flask-ийн json.dumps ямар ч гүн/бүтэцтэй объект дотор bytes
+    таарвал (жишээ нь zeep-ийн CompoundValue дотор binary талбар) crash
+    хийхгүйгээр base64/utf-8 строк болгож хөрвүүлнэ — энэ бол
+    json_safe()-ээс илүү найдвартай сүүлчийн хамгаалалт."""
+
+    @staticmethod
+    def default(obj):
+        if isinstance(obj, bytes):
+            try:
+                return obj.decode("utf-8")
+            except UnicodeDecodeError:
+                return b64encode(obj).decode("ascii")
+        return DefaultJSONProvider.default(obj)
+
+
 app = Flask(__name__)
+app.json = BytesSafeJSONProvider(app)
 
 
 @app.get("/health")
@@ -151,7 +185,7 @@ def vehicle():
     try:
         service = XypService(VEHICLE_WSDL, ACCESS_TOKEN, KEY_PATH)
         res = service.call("WS100401_getVehicleInfo", params)
-        res_dict = serialize_object(res)
+        res_dict = json_safe(serialize_object(res))
 
         # ХУР зарим тохиолдолд амжилттай HTTP хариу дотор resultCode/
         # resultMessage-ээр алдаагаа буцаадаг тул шалгаж, байвал тодорхой
