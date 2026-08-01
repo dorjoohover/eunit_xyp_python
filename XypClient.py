@@ -32,6 +32,7 @@ class Service():
             'timeStamp' : timestamp,
             'signature' : self.__signature
         })
+        print(self.client.wsdl.dump())
     
     def deep_convert_unicode(self, key, layer):
     
