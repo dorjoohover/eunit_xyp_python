@@ -27,7 +27,7 @@ from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 
-from env import ACCESS_TOKEN, KEY_PATH, REGNUM
+from env import ACCESS_TOKEN, CERT_PATH, KEY_PATH, REGNUM
 
 urllib3.disable_warnings()
 
@@ -126,11 +126,25 @@ class XypService:
     зөвхөн ашиглах үед л client үүсгэнэ (client.py-ийн импортын side-effect
     асуудлыг давтахгүйн тулд)."""
 
-    def __init__(self, wsdl, access_token, key_path):
-        logger.debug("XypService: WSDL=%s key_path=%s", wsdl, key_path)
+    def __init__(self, wsdl, access_token, key_path, cert_path=None):
+        logger.debug(
+            "XypService: WSDL=%s key_path=%s cert_path=%s", wsdl, key_path, cert_path,
+        )
         to_be_signed, signature = XypSign(key_path).sign(access_token)
         session = Session()
         session.verify = False
+        if cert_path:
+            # BUG FIX: ХУР-ын жишээ клиент (client.py, DigitalSignatureApprove.py-
+            # той адил гарын үсэг) `session.cert = (CERT_PATH, KEY_PATH)`-ээр
+            # mutual TLS клиент сертификат дамжуулдаг байсан бол манай server.py
+            # энэ хэсгийг огт хийдэггүй байсан — зөвхөн accessToken/signature-ийн
+            # header-ийг л явуулдаг байв. ХУР-ын дэмжлэгийн хариунд resultCode 3
+            # "заавал байх шаардлагатай утгыг хоосон явуулсан" гэснийг үзвэл, энэ
+            # client-сертификат нь тухайн токентой холбоотой шаардлагатай мэдээлэл
+            # байж болзошгүй тул сэргээж нэмлээ (certificate.crt/mykey.key нь
+            # тухайн CN=6910033_195 гэдгээрээ яг энэ токен/байгууллагад олгогдсон
+            # гэдгийг баталгаажуулсан).
+            session.cert = (cert_path, key_path)
         transport = Transport(session=session)
 
         self.client = Client(wsdl, transport=transport)
@@ -199,8 +213,8 @@ def vehicle():
     otp_code = body.get("otp")
 
     logger.debug(
-        "/vehicle: num=%s (len=%d) otp=%s ACCESS_TOKEN=%s KEY_PATH=%s REGNUM=%s",
-        num, len(num), bool(otp_code), mask_token(ACCESS_TOKEN), KEY_PATH, REGNUM,
+        "/vehicle: num=%s (len=%d) otp=%s ACCESS_TOKEN=%s KEY_PATH=%s CERT_PATH=%s REGNUM=%s",
+        num, len(num), bool(otp_code), mask_token(ACCESS_TOKEN), KEY_PATH, CERT_PATH, REGNUM,
     )
 
     if not ACCESS_TOKEN or not KEY_PATH:
@@ -248,7 +262,7 @@ def vehicle():
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
     try:
-        service = XypService(VEHICLE_WSDL, ACCESS_TOKEN, KEY_PATH)
+        service = XypService(VEHICLE_WSDL, ACCESS_TOKEN, KEY_PATH, CERT_PATH)
         res = service.call("WS100401_getVehicleInfo", params)
         res_dict = json_safe(serialize_object(res))
         logger.info("/vehicle: SOAP-аас ирсэн бүтэн хариу=%s", res_dict)
