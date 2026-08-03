@@ -207,21 +207,34 @@ def vehicle():
         logger.error("/vehicle: ACCESS_TOKEN эсвэл KEY_PATH тохируулагдаагүй байна")
         return jsonify({"error": "ACCESS_TOKEN or KEY_PATH is missing"}), 500
 
+    # BUG FIX: ХУР-аас өгсөн жишээ клиент код (Service.dump) `auth` блокийг
+    # ОГТ бичдэггүй — зөвхөн `regnum` (болон хэрэгцээт бол plateNumber/
+    # certificatNumber) дамжуулаад л дуудаж байгаа. Бид өмнө нь `auth.citizen.
+    # authType`-г гараар 0 (= хурууны хээ баталгаажуулалт) болгож бичсэн нь,
+    # ХУР талын тохиргоонд citizen/operator аль аль нь authentication
+    # шаардахгүй ("Үгүй") гэж баталгаажсан хэдий ч бид өөрсдөө headless
+    # серверээс биет хурууны хээ өгөх боломжгүй тул үргэлж "*** NO ACCESS ***"
+    # → resultCode 3 (хүчингүй хандалт) болж татгалздаг байсныг тайлбарлаж
+    # байна. Одоо: OTP код өгөгдсөн үед л (жинхэнэ OTP урсгал хэрэгтэй үед)
+    # auth блокийг authType=1-ээр илгээнэ; OTP өгөгдөөгүй бол ХУР-ын жишээтэй
+    # адил auth блокийг огт оруулахгүй — zeep/WSDL-ийн өөрийнх нь default-аар
+    # үлдээнэ.
     params = {
-        "auth": {
+        "cabinNumber": None,
+        "certificatNumber": None,
+        "regnum": REGNUM,
+    }
+    if otp_code:
+        params["auth"] = {
             "citizen": {
-                "authType": 1 if otp_code else 0,  # OTP -> 1, fingerprint -> 0
+                "authType": 1,
                 "regnum": REGNUM,  # env.py-д өгсөн РД
                 "otp": otp_code,
             },
             "operator": {
                 "authType": 0,
             },
-        },
-        "cabinNumber": None,
-        "certificatNumber": None,
-        "regnum": REGNUM,
-    }
+        }
     if len(num) <= 7:
         params["plateNumber"] = num
     else:
