@@ -180,7 +180,12 @@ def vehicle():
     if len(num) <= 7:
         params["plateNumber"] = num
     else:
-        params["certificateNumber"] = num
+        # WSDL-ийн жинхэнэ талбарын нэр "certificatNumber" (e дутуу) —
+        # response-ийн "request" хэсэгт echo хийгдэж байгаагаас батлагдсан.
+        # Өмнө нь "certificateNumber" (зөв бичилттэй) руу бичиж байсан нь
+        # зэрэг оршдог "certificatNumber": None-той зөрчилдөж, урт дугаараар
+        # (гэрчилгээний дугаар) хайхад шаардлагатай талбар хоосон үлддэг байсан.
+        params["certificatNumber"] = num
 
     try:
         service = XypService(VEHICLE_WSDL, ACCESS_TOKEN, KEY_PATH)
