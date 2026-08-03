@@ -31,8 +31,25 @@ from env import ACCESS_TOKEN, KEY_PATH, REGNUM
 
 urllib3.disable_warnings()
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 logger = logging.getLogger("xyp-server")
+
+# zeep-ийн явуулж/хүлээж авч буй бодит SOAP XML-ийг бүхэлд нь харуулна
+# (хүсэлт бүтэц алдаатай эсэхийг ХУР-ын тайлбараас үл хамааран өөрөө
+# нүдээрээ шалгаж болохоор).
+logging.getLogger("zeep.transports").setLevel(logging.DEBUG)
+logging.getLogger("zeep.wsdl.bindings.soap").setLevel(logging.DEBUG)
+
+
+def mask_token(token):
+    """ACCESS_TOKEN-ийг ХУР-ын өөрийнх нь хэвшмэл маягаар ([95b3***563c])
+    log-д бүрэн ил гаргалгүй хэсэгчлэн харуулна."""
+    if not token or len(token) <= 8:
+        return "****"
+    return f"{token[:4]}{'*' * (len(token) - 8)}{token[-4:]}"
 
 VEHICLE_WSDL = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
 
@@ -95,6 +112,12 @@ class XypSign:
         digest.update(self._build_param(to_be_signed).encode("utf8"))
         pkey = self._get_priv_key()
         signature = b64encode(PKCS1_v1_5.new(pkey).sign(digest))
+        logger.debug(
+            "XypSign: accessToken=%s timeStamp=%s signature=%s",
+            mask_token(access_token),
+            to_be_signed["timeStamp"],
+            signature.decode("ascii"),
+        )
         return to_be_signed, signature
 
 
@@ -104,6 +127,7 @@ class XypService:
     асуудлыг давтахгүйн тулд)."""
 
     def __init__(self, wsdl, access_token, key_path):
+        logger.debug("XypService: WSDL=%s key_path=%s", wsdl, key_path)
         to_be_signed, signature = XypSign(key_path).sign(access_token)
         session = Session()
         session.verify = False
@@ -115,11 +139,22 @@ class XypService:
             "timeStamp": to_be_signed["timeStamp"],
             "signature": signature,
         })
+        logger.debug(
+            "XypService: HTTP headers=%s",
+            {
+                **self.client.transport.session.headers,
+                "accessToken": mask_token(access_token),
+            },
+        )
 
     def call(self, operation, params=None):
+        logger.debug("XypService.call: operation=%s params=%s", operation, params)
         if params:
-            return self.client.service[operation](params)
-        return self.client.service[operation]()
+            result = self.client.service[operation](params)
+        else:
+            result = self.client.service[operation]()
+        logger.debug("XypService.call: raw result=%r", result)
+        return result
 
 
 class BytesSafeJSONProvider(DefaultJSONProvider):
@@ -149,8 +184,12 @@ def health():
 
 @app.post("/vehicle")
 def vehicle():
+    logger.info("=== /vehicle: шинэ хүсэлт ирлээ ===")
     body = request.get_json(silent=True)
+    logger.debug("/vehicle: incoming body=%s", body)
+
     if not body or not body.get("num"):
+        logger.warning("/vehicle: `num` талбар дутуу — body=%s", body)
         abort(400, description="Missing `num` field")
 
     num = str(body["num"])
@@ -159,7 +198,13 @@ def vehicle():
     # дэмжигдээгүй, ESIGN client шаарддаг тул headless серверт тохиромжгүй).
     otp_code = body.get("otp")
 
+    logger.debug(
+        "/vehicle: num=%s (len=%d) otp=%s ACCESS_TOKEN=%s KEY_PATH=%s REGNUM=%s",
+        num, len(num), bool(otp_code), mask_token(ACCESS_TOKEN), KEY_PATH, REGNUM,
+    )
+
     if not ACCESS_TOKEN or not KEY_PATH:
+        logger.error("/vehicle: ACCESS_TOKEN эсвэл KEY_PATH тохируулагдаагүй байна")
         return jsonify({"error": "ACCESS_TOKEN or KEY_PATH is missing"}), 500
 
     params = {
@@ -187,10 +232,13 @@ def vehicle():
         # (гэрчилгээний дугаар) хайхад шаардлагатай талбар хоосон үлддэг байсан.
         params["certificatNumber"] = num
 
+    logger.info("/vehicle: SOAP руу явуулах params=%s", params)
+
     try:
         service = XypService(VEHICLE_WSDL, ACCESS_TOKEN, KEY_PATH)
         res = service.call("WS100401_getVehicleInfo", params)
         res_dict = json_safe(serialize_object(res))
+        logger.info("/vehicle: SOAP-аас ирсэн бүтэн хариу=%s", res_dict)
 
         # ХУР зарим тохиолдолд амжилттай HTTP хариу дотор resultCode/
         # resultMessage-ээр алдаагаа буцаадаг тул шалгаж, байвал тодорхой
@@ -204,17 +252,22 @@ def vehicle():
             payload["xyp_error_code"] = str(result_code)
             payload["xyp_error_description"] = describe_xyp_code(result_code)
             logger.warning(
-                "xyp resultCode=%s (%s)", result_code, describe_xyp_code(result_code)
+                "/vehicle: resultCode=%s (%s) — илгээсэн params=%s",
+                result_code, describe_xyp_code(result_code), params,
             )
             return jsonify(payload), 502
 
+        logger.info("/vehicle: амжилттай, resultCode=0")
         return jsonify(payload), 200
 
     except Fault as e:
         # SOAP fault — faultcode/faultstring/detail-ийг бүгдийг гаргаж өгнө
         code = getattr(e, "code", None) or getattr(e, "actor", None)
         detail = getattr(e, "detail", None)
-        logger.error("SOAP Fault: code=%s message=%s detail=%s", code, e.message, detail)
+        logger.exception(
+            "/vehicle: SOAP Fault code=%s message=%s detail=%s params=%s",
+            code, e.message, detail, params,
+        )
         return jsonify({
             "error": "soap_fault",
             "message": str(e.message),
@@ -226,14 +279,14 @@ def vehicle():
     except (TransportError, ReqConnectionError) as e:
         # Сүлжээ/DNS/TLS/HTTP-ийн түвшний алдаа (жишээ нь xyp.gov.mn
         # resolve хийгдэхгүй байх, эсвэл IP whitelist хараахан идэвхжээгүй)
-        logger.error("Transport error calling xyp.gov.mn: %s", str(e))
+        logger.exception("/vehicle: Transport error calling xyp.gov.mn: %s", str(e))
         return jsonify({
             "error": "transport_error",
             "message": str(e),
         }), 502
 
     except Exception as e:
-        logger.exception("Unhandled vehicle() error")
+        logger.exception("/vehicle: Unhandled error, params=%s", params)
         return jsonify({"error": "unhandled_error", "message": str(e)}), 500
 
 
