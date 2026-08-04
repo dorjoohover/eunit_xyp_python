@@ -155,43 +155,41 @@ def vehicle():
     body = request.get_json(silent=True) or {}
     logger.debug("/vehicle: incoming body=%s", body)
 
-    plate_number = str(body.get("plateNumber") or "").strip().upper()
-    cabin_number = str(body.get("cabinNumber") or "").strip()
+    plate_number = str(
+        body.get("plateNumber")
+        or body.get("num")
+        or ""
+    ).strip().upper()
+
+    cabin_number = str(
+        body.get("cabinNumber")
+        or ""
+    ).strip()
+
     certificat_number = str(
         body.get("certificatNumber")
         or body.get("certificateNumber")
         or ""
     ).strip()
 
-    # ХУР-аас "заавал байх утга дутуу" гэж тайлбарласан тул
-    # эхний туршилтаар 3 утгыг бүгдийг шаардъя.
-    missing_fields = []
-
-    if not plate_number:
-        missing_fields.append("plateNumber")
-
-    if not cabin_number:
-        missing_fields.append("cabinNumber")
-
-    if not certificat_number:
-        missing_fields.append("certificatNumber")
-
-    if missing_fields:
+    if not plate_number and not cabin_number and not certificat_number:
         return jsonify({
-            "error": "Шаардлагатай утга дутуу",
-            "missingFields": missing_fields,
-            "requiredExample": {
-                "plateNumber": "4836УАТ",
-                "cabinNumber": "АРЛЫН_ДУГААР",
-                "certificatNumber": "ГЭРЧИЛГЭЭНИЙ_ДУГААР",
-            },
+            "error": (
+                "plateNumber, num, cabinNumber, certificatNumber "
+                "талбаруудын аль нэгийг оруулна уу"
+            )
         }), 400
 
-    params = {
-        "plateNumber": plate_number,
-        "cabinNumber": cabin_number,
-        "certificatNumber": certificat_number,
-    }
+    params = {}
+
+    if plate_number:
+        params["plateNumber"] = plate_number
+
+    if cabin_number:
+        params["cabinNumber"] = cabin_number
+
+    if certificat_number:
+        params["certificatNumber"] = certificat_number
 
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
