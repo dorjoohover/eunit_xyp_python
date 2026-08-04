@@ -34,7 +34,6 @@ def vehicle():
 
     params = {
         "plateNumber": num, 
-        "regnum": REGNUM,
     }
 
     try:
@@ -51,7 +50,11 @@ def vehicle():
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        traceback.print_exc()
+        return jsonify({
+            "error": str(e),
+            "type": type(e).__name__
+        }), 500
 
 
 @app.post("/property")

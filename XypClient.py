@@ -68,9 +68,11 @@ class Service():
         try:
             if params:
                 response = self.client.service[operation](params)
-                print(response)
             else:
-                print(self.client.service[operation]())
-        except Exception as e:
-            print( operation, str(e))
+                response = self.client.service[operation]()
+
+            return response
+
+        except Exception:
+            raise
     
