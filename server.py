@@ -233,10 +233,19 @@ def vehicle():
     # auth блокийг authType=1-ээр илгээнэ; OTP өгөгдөөгүй бол ХУР-ын жишээтэй
     # адил auth блокийг огт оруулахгүй — zeep/WSDL-ийн өөрийнх нь default-аар
     # үлдээнэ.
+    # dump_schema.py-ийн үр дүнгээр vehicleRequestData-ийн БҮХ талбар
+    # (auth, cabinNumber, certificatNumber, plateNumber, regnum) XSD-ийн
+    # түвшинд min_occurs=0 буюу "заавал" биш болох нь тогтоогдсон. Гэтэл бид
+    # хийсэн бүх хувилбарт (auth-той/аваагүй, сертификаттай/аваагүй) яг
+    # ижилхэн resultCode 3 ирсээр байсан бөгөөд цорын ганц тогтмол зүйл бол
+    # `regnum`-ийг plateNumber-тэй ЗЭРЭГ үргэлж явуулж байсан явдал.
+    # Тест: regnum болон plateNumber/certificatNumber-ийг зэрэг биш, зөвхөн
+    # хайх утгаараа (аль нэгээр нь) явуулж үзье — хэрэв энэ ч мөн адил алдаа
+    # өгвөл дараагийн алхам бол ХУР-аас "яг аль талбар хоосон байна" гэдгийг
+    # тодорхой асуух хэрэгтэй болно.
     params = {
         "cabinNumber": None,
         "certificatNumber": None,
-        "regnum": REGNUM,
     }
     if otp_code:
         params["auth"] = {
@@ -258,6 +267,12 @@ def vehicle():
         # зэрэг оршдог "certificatNumber": None-той зөрчилдөж, урт дугаараар
         # (гэрчилгээний дугаар) хайхад шаардлагатай талбар хоосон үлддэг байсан.
         params["certificatNumber"] = num
+
+    if not params.get("plateNumber") and not params.get("certificatNumber"):
+        # Аль ч vehicle identifier өгөгдөөгүй бол зөвхөн regnum-аар хайх
+        # (WS100406_getCitizenVehicleList шиг "иргэний бүх машин" төрлийн
+        # хайлтад зориулагдсан байж болзошгүй тул нөөц хувилбар).
+        params["regnum"] = REGNUM
 
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
