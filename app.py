@@ -155,83 +155,101 @@ def vehicle():
     body = request.get_json(silent=True) or {}
     logger.debug("/vehicle: incoming body=%s", body)
 
-    plate_number = str(body.get("plateNumber") or body.get("num") or "").strip()
+    plate_number = str(body.get("plateNumber") or "").strip().upper()
     cabin_number = str(body.get("cabinNumber") or "").strip()
-    certificate_number = str(
+    certificat_number = str(
         body.get("certificatNumber")
         or body.get("certificateNumber")
         or ""
     ).strip()
 
-    if not plate_number and not cabin_number and not certificate_number:
+    # ХУР-аас "заавал байх утга дутуу" гэж тайлбарласан тул
+    # эхний туршилтаар 3 утгыг бүгдийг шаардъя.
+    missing_fields = []
+
+    if not plate_number:
+        missing_fields.append("plateNumber")
+
+    if not cabin_number:
+        missing_fields.append("cabinNumber")
+
+    if not certificat_number:
+        missing_fields.append("certificatNumber")
+
+    if missing_fields:
         return jsonify({
-            "error": (
-                "plateNumber, cabinNumber, certificatNumber "
-                "талбаруудын аль нэгийг оруулна уу"
-            )
+            "error": "Шаардлагатай утга дутуу",
+            "missingFields": missing_fields,
+            "requiredExample": {
+                "plateNumber": "4836УАТ",
+                "cabinNumber": "АРЛЫН_ДУГААР",
+                "certificatNumber": "ГЭРЧИЛГЭЭНИЙ_ДУГААР",
+            },
         }), 400
 
-    params = {}
-
-    if plate_number:
-        params["plateNumber"] = plate_number.strip().upper()
-
-    if cabin_number:
-        params["cabinNumber"] = cabin_number
-
-    if certificate_number:
-        params["certificatNumber"] = certificate_number
+    params = {
+        "plateNumber": plate_number,
+        "cabinNumber": cabin_number,
+        "certificatNumber": certificat_number,
+    }
 
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
     try:
         service = XypService(
-    TRANSPORT_WSDL,
-    ACCESS_TOKEN,
-    CERT_PATH,
-    KEY_PATH,
-)
+            TRANSPORT_WSDL,
+            ACCESS_TOKEN,
+            CERT_PATH,
+            KEY_PATH,
+        )
 
         result = service.call(
             "WS100401_getVehicleInfo",
-            params
+            params,
         )
 
         result_dict = serialize_object(result)
 
         logger.info(
             "/vehicle: SOAP-аас ирсэн хариу=%s",
-            result_dict
+            result_dict,
         )
 
+        result_code = (
+            result_dict.get("resultCode")
+            if isinstance(result_dict, dict)
+            else None
+        )
+
+        http_status = 200 if result_code in (0, "0") else 422
+
         return jsonify({
-            "vehicle": result_dict
-        }), 200
+            "vehicle": result_dict,
+        }), http_status
 
     except Fault as exc:
         logger.exception("/vehicle: SOAP Fault")
         return jsonify({
             "error": str(exc),
-            "type": "SOAPFault"
+            "type": "SOAPFault",
         }), 502
 
     except (TransportError, ReqConnectionError) as exc:
         logger.exception("/vehicle: Transport error")
         return jsonify({
             "error": str(exc),
-            "type": "TransportError"
+            "type": "TransportError",
         }), 502
 
     except Exception as exc:
         logger.exception(
             "/vehicle: Unhandled error, params=%s",
-            params
+            params,
         )
         return jsonify({
             "error": str(exc),
-            "type": type(exc).__name__
+            "type": type(exc).__name__,
         }), 500
-
 if __name__ == "__main__":
     # dev/test-д зориулсан; prod дээр gunicorn ашиглана (README-г үз)
     app.run(host="0.0.0.0", port=8088)
