@@ -1,6 +1,7 @@
 # -- coding: utf-8 --
 from collections.abc import Mapping
 #//
+import client
 import zeep, base64
 from zeep import Client
 from zeep.transports import Transport
@@ -32,7 +33,8 @@ class Service():
             'timeStamp' : timestamp,
             'signature' : self.__signature
         })
-        print(self.client.wsdl.dump())
+        print(client.service)
+        print(client.wsdl.dump())
     
     def deep_convert_unicode(self, key, layer):
     
