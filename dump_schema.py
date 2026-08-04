@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-WS100401_getVehicleInfo (болон бусад vehicle service) дуудлагын жинхэнэ
-WSDL/XSD бүтцийг хэвлэж, аль талбар "заавал" (required) болохыг харуулна.
+WS100401_getVehicleInfo дуудлагад ашиглагдах "vehicleRequestData" төрлийн
+бодит XSD бүтцийг (талбар бүр, түүний min_occurs/nillable-ийг оруулаад)
+рекурсивоор хэвлэж, аль талбар үнэхээр "заавал" болохыг харуулна.
 
-ХУР-ын дэмжлэгийн баг resultCode 3-ыг "заавал байх шаардлагатай утгыг
-хоосон явуулсан" гэж тайлбарласан хэдий ч бид олон янзын хослолоор
-(auth блоктой/блокгүй, client TLS сертификаттай/сертификатгүй) тест хийхэд
-яг ижил алдаа давтагдсаар байгаа тул схемийг өөрийг нь харж, аль талбар
-яг заавал (minOccurs=1, nillable=false гэх мэт) болохыг нүдээрээ шалгах
-шаардлагатай боллоо.
-
-Ажиллуулах (энэ серверээс, учир нь зөвхөн энд xyp.gov.mn руу хандах
-боломжтой):
+Ажиллуулах (зөвхөн xyp.gov.mn руу network хандалттай серверээс):
+    source venv/bin/activate
     python3 dump_schema.py
 
 Гаралтыг бүхэлд нь хуулж илгээнэ үү.
@@ -24,35 +18,52 @@ from zeep.transports import Transport
 urllib3.disable_warnings()
 
 WSDL = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
+NS = "http://transport.xyp.gov.mn/"
 
 session = Session()
 session.verify = False
 transport = Transport(session=session)
 client = Client(WSDL, transport=transport)
 
+
+def describe(type_obj, indent=0, seen=None):
+    if seen is None:
+        seen = set()
+    pad = "  " * indent
+    elements = getattr(type_obj, "elements", None)
+    if not elements:
+        return
+    for name, element in elements:
+        try:
+            min_occurs = element.min_occurs
+            max_occurs = element.max_occurs
+            nillable = getattr(element, "nillable", None)
+        except Exception as e:
+            print(f"{pad}- {name}: <inspect error: {e}>")
+            continue
+        etype = element.type
+        required_mark = "REQUIRED" if (min_occurs or 0) >= 1 else "optional"
+        print(
+            f"{pad}- {name}: type={etype} min_occurs={min_occurs} "
+            f"max_occurs={max_occurs} nillable={nillable} -> {required_mark}"
+        )
+        key = str(getattr(etype, "qname", etype))
+        if key not in seen and hasattr(etype, "elements") and etype.elements:
+            seen.add(key)
+            describe(etype, indent + 1, seen)
+
+
 print("=" * 80)
-print("OPERATION SIGNATURE: WS100401_getVehicleInfo")
+print("vehicleRequestData бүтэц (талбар бүрийн required эсэхийг харуулна)")
 print("=" * 80)
-print(client.service.WS100401_getVehicleInfo)
+try:
+    req_type = client.get_type(f"{{{NS}}}vehicleRequestData")
+    describe(req_type)
+except Exception as e:
+    print(f"get_type алдаа: {e}")
 
 print()
 print("=" * 80)
-print("ALL TYPES CONTAINING 'vehicle' OR 'auth' OR 'Auth' IN NAME")
+print("WSDL бүтэн dump (нэмэлт лавлагаа)")
 print("=" * 80)
-
-# zeep-ийн бүх бүртгэгдсэн төрлүүдийг гүйж, нэрэнд нь vehicle/auth орсныг
-# бүгдийг нь дэлгэрэнгүй хэвлэнэ (аль хувилбар дээр ч ажиллана).
-seen = set()
-for schema in client.wsdl.types.schemas.values():
-    for type_name, type_obj in list(schema._types.items()):
-        name = str(type_name)
-        if name in seen:
-            continue
-        if "vehicle" in name.lower() or "auth" in name.lower():
-            seen.add(name)
-            print(f"--- {name} ---")
-            try:
-                print(type_obj.signature())
-            except Exception as e:
-                print(f"(signature() алдаа: {e})")
-            print()
+print(client.wsdl.dump())
