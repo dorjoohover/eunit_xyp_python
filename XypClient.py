@@ -1,7 +1,6 @@
 # -- coding: utf-8 --
 from collections.abc import Mapping
 #//
-import client
 import zeep, base64
 from zeep import Client
 from zeep.transports import Transport
@@ -9,7 +8,8 @@ from XypSign import XypSign
 from requests import Session
 import urllib3
 from env import ACCESS_TOKEN
-
+from zeep.plugins import HistoryPlugin
+from lxml import etree
 """
 ХУР Төрийн Мэдээлэл Солилцооны системээс сервис дуудах 
 
@@ -23,18 +23,28 @@ class Service():
         self.__toBeSigned, self.__signature = XypSign(pkey_path).sign(self.__accessToken, timestamp)
         self.__signature = self.__signature
         urllib3.disable_warnings()
+
         session = Session()
         session.verify = False
-        transport = zeep.Transport(session=session)
+
+        transport = Transport(session=session)
     
-        self.client = zeep.Client(wsdl, transport=transport)
+
+        history = HistoryPlugin()
+
+        self.client = zeep.Client(
+            wsdl=wsdl_url,
+            transport=transport,
+            plugins=[history]
+        )
+
+        self.history = history
+
         self.client.transport.session.headers.update({
-            'accessToken': self.__accessToken,
-            'timeStamp' : timestamp,
-            'signature' : self.__signature
+            "accessToken": self.__accessToken,
+            "timeStamp": timestamp,
+            "signature": self.__signature
         })
-        print(client.service)
-        print(client.wsdl.dump())
     
     def deep_convert_unicode(self, key, layer):
     

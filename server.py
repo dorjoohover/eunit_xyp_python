@@ -2,10 +2,11 @@
 
 import time
 import logging
-
+from zeep.plugins import HistoryPlugin
+from lxml import etree
 from flask import Flask, request, jsonify
 from zeep.helpers import serialize_object
-
+from lxml import etree
 from XypClient import Service
 from env import KEY_PATH, REGNUM
 
@@ -42,9 +43,19 @@ def vehicle():
             str(int(time.time())),
             pkey_path=KEY_PATH
         )
-
+        svc.client.wsdl.dump()
         result = svc.client.service.WS100401_getVehicleInfo(params)
+        print("========== REQUEST ==========")
+        print(etree.tostring(
+            svc.history.last_sent["envelope"],
+            pretty_print=True
+        ).decode())
 
+        print("========== RESPONSE ==========")
+        print(etree.tostring(
+            svc.history.last_received["envelope"],
+            pretty_print=True
+        ).decode())
         return jsonify(
             serialize_object(result)
         )
