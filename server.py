@@ -33,7 +33,8 @@ def vehicle():
         return jsonify({"error": "num required"}), 400
 
     params = {
-        "plateNumber": num
+        "plateNumber": num, 
+        "regnum": REGNUM,
     }
 
     try:
