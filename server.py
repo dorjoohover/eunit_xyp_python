@@ -9,7 +9,8 @@ from zeep.helpers import serialize_object
 from lxml import etree
 from XypClient import Service
 from env import KEY_PATH, REGNUM
-
+from XypClient import Service
+import traceback
 logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)

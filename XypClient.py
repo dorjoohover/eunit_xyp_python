@@ -10,6 +10,7 @@ import urllib3
 from env import ACCESS_TOKEN
 from zeep.plugins import HistoryPlugin
 from lxml import etree
+import wsdl_url
 """
 ХУР Төрийн Мэдээлэл Солилцооны системээс сервис дуудах 
 
