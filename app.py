@@ -140,6 +140,29 @@ class XypService:
         logger.debug("XypService.call: raw result=%r", result)
         return result
 
+
+def classify_xyp_result(result_dict):
+    """Map XYP result codes/messages to a more accurate HTTP status."""
+    if not isinstance(result_dict, dict):
+        return 502, "XYPMalformedResponse"
+
+    result_code = result_dict.get("resultCode")
+    result_message = str(result_dict.get("resultMessage") or "").lower()
+
+    if result_code in (0, "0"):
+        return 200, None
+
+    if result_code in (1, "1"):
+        return 404, "XYPNotFound"
+
+    if result_code in (3, "3"):
+        if "хүчингүй хандалт" in result_message:
+            return 403, "XYPAccessDenied"
+        return 400, "XYPInvalidRequest"
+
+    return 502, "XYPUpstreamError"
+
+
 app = Flask(__name__)
 
 
@@ -213,17 +236,34 @@ def vehicle():
             result_dict,
         )
 
-        result_code = (
-            result_dict.get("resultCode")
-            if isinstance(result_dict, dict)
-            else None
-        )
-
-        http_status = 200 if result_code in (0, "0") else 422
-
-        return jsonify({
+        http_status, error_type = classify_xyp_result(result_dict)
+        response_body = {
             "vehicle": result_dict,
-        }), http_status
+        }
+
+        if error_type:
+            response_body["error"] = {
+                "type": error_type,
+                "resultCode": (
+                    result_dict.get("resultCode")
+                    if isinstance(result_dict, dict)
+                    else None
+                ),
+                "message": (
+                    result_dict.get("resultMessage")
+                    if isinstance(result_dict, dict)
+                    else "Malformed XYP response",
+                ),
+            }
+
+            logger.warning(
+                "/vehicle: XYP non-success resultCode=%s errorType=%s httpStatus=%s",
+                response_body["error"]["resultCode"],
+                error_type,
+                http_status,
+            )
+
+        return jsonify(response_body), http_status
 
     except Fault as exc:
         logger.exception("/vehicle: SOAP Fault")
