@@ -133,68 +133,85 @@ def health():
 @app.post("/vehicle")
 def vehicle():
     logger.info("=== /vehicle: шинэ хүсэлт ирлээ ===")
-    body = request.get_json(silent=True)
+
+    body = request.get_json(silent=True) or {}
     logger.debug("/vehicle: incoming body=%s", body)
 
-    if not body or not body.get("num"):
-        logger.warning("/vehicle: `num` талбар дутуу — body=%s", body)
-        abort(400, description="Missing `num` field")
+    plate_number = str(body.get("plateNumber") or body.get("num") or "").strip()
+    cabin_number = str(body.get("cabinNumber") or "").strip()
+    certificate_number = str(
+        body.get("certificatNumber")
+        or body.get("certificateNumber")
+        or ""
+    ).strip()
 
-    num = str(body["num"])
-    logger.debug(
-        "/vehicle: num=%s ACCESS_TOKEN=%s KEY_PATH=%s REGNUM=%s",
-        num, mask_token(ACCESS_TOKEN), KEY_PATH, REGNUM,
-    )
+    if not plate_number and not cabin_number and not certificate_number:
+        return jsonify({
+            "error": (
+                "plateNumber, cabinNumber, certificatNumber "
+                "талбаруудын аль нэгийг оруулна уу"
+            )
+        }), 400
 
-    if not ACCESS_TOKEN or not KEY_PATH:
-        logger.error("/vehicle: ACCESS_TOKEN эсвэл KEY_PATH тохируулагдаагүй байна")
-        return jsonify({"error": "ACCESS_TOKEN or KEY_PATH is missing"}), 500
+    params = {}
 
-    # ХУР-ын өөрийнх нь жишээ код (SimpleRequest.py) `{'regnum': REGNUM}`
-    # гэсэн хамгийн цэвэр минимал бүтэцтэй дуудлага хийдэг байсан. Бид
-    # үүнтэй яг адил суурь дээр, тодорхой машиныг ялгах зорилготой
-    # `plateNumber`-ийг нэмж явуулна.
-    params = {
-        "regnum": REGNUM,
-        "plateNumber": num,
-    }
+    if plate_number:
+        params["plateNumber"] = plate_number
+
+    if cabin_number:
+        params["cabinNumber"] = cabin_number
+
+    if certificate_number:
+        params["certificatNumber"] = certificate_number
 
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
     try:
-        service = XypService(TRANSPORT_WSDL, ACCESS_TOKEN, KEY_PATH)
-        res = service.call("WS100401_getVehicleInfo", params)
-        res_dict = serialize_object(res)
-        logger.info("/vehicle: SOAP-аас ирсэн бүтэн хариу=%s", res_dict)
-
-        result_code = res_dict.get("resultCode") if isinstance(res_dict, dict) else None
-        if result_code not in (None, 0, "0"):
-            logger.warning(
-                "/vehicle: resultCode=%s message=%s — илгээсэн params=%s",
-                result_code,
-                res_dict.get("resultMessage") if isinstance(res_dict, dict) else None,
-                params,
-            )
-
-        return jsonify({"vehicle": res_dict}), 200
-
-    except Fault as e:
-        code = getattr(e, "code", None) or getattr(e, "actor", None)
-        detail = getattr(e, "detail", None)
-        logger.exception(
-            "/vehicle: SOAP Fault code=%s message=%s detail=%s params=%s",
-            code, e.message, detail, params,
+        service = XypService(
+            TRANSPORT_WSDL,
+            ACCESS_TOKEN,
+            KEY_PATH
         )
-        return jsonify({"error": str(e)}), 500
 
-    except (TransportError, ReqConnectionError) as e:
-        logger.exception("/vehicle: Transport error calling xyp.gov.mn: %s", str(e))
-        return jsonify({"error": str(e)}), 500
+        result = service.call(
+            "WS100401_getVehicleInfo",
+            params
+        )
 
-    except Exception as e:
-        logger.exception("/vehicle: Unhandled error, params=%s", params)
-        return jsonify({"error": str(e)}), 500
+        result_dict = serialize_object(result)
 
+        logger.info(
+            "/vehicle: SOAP-аас ирсэн хариу=%s",
+            result_dict
+        )
+
+        return jsonify({
+            "vehicle": result_dict
+        }), 200
+
+    except Fault as exc:
+        logger.exception("/vehicle: SOAP Fault")
+        return jsonify({
+            "error": str(exc),
+            "type": "SOAPFault"
+        }), 502
+
+    except (TransportError, ReqConnectionError) as exc:
+        logger.exception("/vehicle: Transport error")
+        return jsonify({
+            "error": str(exc),
+            "type": "TransportError"
+        }), 502
+
+    except Exception as exc:
+        logger.exception(
+            "/vehicle: Unhandled error, params=%s",
+            params
+        )
+        return jsonify({
+            "error": str(exc),
+            "type": type(exc).__name__
+        }), 500
 
 if __name__ == "__main__":
     # dev/test-д зориулсан; prod дээр gunicorn ашиглана (README-г үз)
