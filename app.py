@@ -31,7 +31,7 @@ from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 
-from env import ACCESS_TOKEN, KEY_PATH, REGNUM
+from env import ACCESS_TOKEN, CERT_PATH, KEY_PATH, REGNUM
 
 urllib3.disable_warnings()
 
@@ -88,39 +88,57 @@ class XypSign:
 
 
 class XypService:
-    """SimpleRequest.py-ийн Service классын нэг мөр нэг мөрөөр давхцуулсан
-    хувилбар — зөвхөн лог нэмсэн, өөр юу ч өөрчлөөгүй."""
+    def __init__(self, wsdl, access_token, cert_path, key_path):
+        logger.debug(
+            "XypService: WSDL=%s cert_path=%s key_path=%s",
+            wsdl,
+            cert_path,
+            key_path,
+        )
 
-    def __init__(self, wsdl, access_token, key_path):
-        logger.debug("XypService: WSDL=%s key_path=%s", wsdl, key_path)
         to_be_signed, signature = XypSign(key_path).sign(access_token)
+
         session = Session()
         session.verify = False
+
+        # ХУР-аас олгосон TLS client certificate + private key
+        session.cert = (cert_path, key_path)
+
         transport = Transport(session=session)
 
         self.client = Client(wsdl, transport=transport)
+
         self.client.transport.session.headers.update({
             "accessToken": access_token,
             "timeStamp": to_be_signed["timeStamp"],
-            "signature": signature,
+
+            # bytes биш string болгон явуулах нь найдвартай
+            "signature": signature.decode("ascii"),
         })
+
         logger.debug(
             "XypService: HTTP headers=%s",
             {
                 **self.client.transport.session.headers,
                 "accessToken": mask_token(access_token),
+                "signature": "***MASKED***",
             },
         )
 
     def call(self, operation, params=None):
-        logger.debug("XypService.call: operation=%s params=%s", operation, params)
-        if params:
+        logger.debug(
+            "XypService.call: operation=%s params=%s",
+            operation,
+            params,
+        )
+
+        if params is not None:
             result = self.client.service[operation](params)
         else:
             result = self.client.service[operation]()
+
         logger.debug("XypService.call: raw result=%r", result)
         return result
-
 
 app = Flask(__name__)
 
@@ -156,7 +174,7 @@ def vehicle():
     params = {}
 
     if plate_number:
-        params["plateNumber"] = plate_number
+        params["plateNumber"] = plate_number.strip().upper()
 
     if cabin_number:
         params["cabinNumber"] = cabin_number
@@ -168,10 +186,11 @@ def vehicle():
 
     try:
         service = XypService(
-            TRANSPORT_WSDL,
-            ACCESS_TOKEN,
-            KEY_PATH
-        )
+    TRANSPORT_WSDL,
+    ACCESS_TOKEN,
+    CERT_PATH,
+    KEY_PATH,
+)
 
         result = service.call(
             "WS100401_getVehicleInfo",
