@@ -16,6 +16,7 @@ ExecStart мөрийг "server:app"-аас "app:app" болгож солих ё�
     gunicorn -w 2 -b 0.0.0.0:8088 app:app
 """
 import logging
+import os
 import time
 from base64 import b64encode
 
@@ -54,8 +55,38 @@ def mask_token(token):
     return f"{token[:4]}{'*' * (len(token) - 8)}{token[-4:]}"
 
 
-TRANSPORT_WSDL = "https://xyp.gov.mn/property-1.3.0/ws?WSDL"
-# TRANSPORT_WSDL = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
+DEFAULT_SERVICE_GROUP = "transport"
+DEFAULT_VERSION = "1.3.0"
+SUPPORTED_SERVICE_GROUPS = {"property", "transport"}
+
+
+def resolve_existing_path(path):
+    if not path:
+        return path
+
+    local_candidate = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        os.path.basename(path),
+    )
+
+    for candidate in (path, local_candidate):
+        if os.path.exists(candidate):
+            return candidate
+
+    return path
+
+
+def build_wsdl_url(service_group, version):
+    normalized_group = str(service_group or DEFAULT_SERVICE_GROUP).strip().lower()
+    normalized_version = str(version or DEFAULT_VERSION).strip()
+
+    if normalized_group not in SUPPORTED_SERVICE_GROUPS:
+        raise ValueError(
+            f"Unsupported serviceGroup={normalized_group!r}. "
+            f"Supported values: {sorted(SUPPORTED_SERVICE_GROUPS)}"
+        )
+
+    return f"https://xyp.gov.mn/{normalized_group}-{normalized_version}/ws?WSDL"
 
 
 class XypSign:
@@ -90,20 +121,23 @@ class XypSign:
 
 class XypService:
     def __init__(self, wsdl, access_token, cert_path, key_path):
+        resolved_cert_path = resolve_existing_path(cert_path)
+        resolved_key_path = resolve_existing_path(key_path)
+
         logger.debug(
             "XypService: WSDL=%s cert_path=%s key_path=%s",
             wsdl,
-            cert_path,
-            key_path,
+            resolved_cert_path,
+            resolved_key_path,
         )
 
-        to_be_signed, signature = XypSign(key_path).sign(access_token)
+        to_be_signed, signature = XypSign(resolved_key_path).sign(access_token)
 
         session = Session()
         session.verify = False
 
         # ХУР-аас олгосон TLS client certificate + private key
-        session.cert = (cert_path, key_path)
+        session.cert = (resolved_cert_path, resolved_key_path)
 
         transport = Transport(session=session)
 
@@ -164,12 +198,105 @@ def classify_xyp_result(result_dict):
     return 502, "XYPUpstreamError"
 
 
+def execute_xyp_call(wsdl, operation, params):
+    service = XypService(
+        wsdl,
+        ACCESS_TOKEN,
+        CERT_PATH,
+        KEY_PATH,
+    )
+
+    result = service.call(operation, params)
+    result_dict = serialize_object(result)
+
+    logger.info("/xyp: SOAP-аас ирсэн хариу=%s", result_dict)
+
+    http_status, error_type = classify_xyp_result(result_dict)
+    response_body = {
+        "wsdl": wsdl,
+        "operation": operation,
+        "result": result_dict,
+    }
+
+    if error_type:
+        response_body["error"] = {
+            "type": error_type,
+            "resultCode": (
+                result_dict.get("resultCode")
+                if isinstance(result_dict, dict)
+                else None
+            ),
+            "message": (
+                result_dict.get("resultMessage")
+                if isinstance(result_dict, dict)
+                else "Malformed XYP response",
+            ),
+        }
+
+        logger.warning(
+            "/xyp: XYP non-success resultCode=%s errorType=%s httpStatus=%s",
+            response_body["error"]["resultCode"],
+            error_type,
+            http_status,
+        )
+
+    return response_body, http_status
+
+
 app = Flask(__name__)
 
 
 @app.get("/health")
 def health():
     return jsonify({"status": "ok"}), 200
+
+
+@app.post("/xyp/call")
+def xyp_call():
+    logger.info("=== /xyp/call: шинэ хүсэлт ирлээ ===")
+
+    body = request.get_json(silent=True) or {}
+    logger.debug("/xyp/call: incoming body=%s", body)
+
+    operation = str(body.get("operation") or "").strip()
+    if not operation:
+        return jsonify({"error": "operation талбар шаардлагатай"}), 400
+
+    params = body.get("params")
+    if params is not None and not isinstance(params, dict):
+        return jsonify({"error": "params нь JSON object байх ёстой"}), 400
+
+    try:
+        wsdl = body.get("wsdl") or build_wsdl_url(
+            body.get("serviceGroup"),
+            body.get("version"),
+        )
+        response_body, http_status = execute_xyp_call(wsdl, operation, params)
+        return jsonify(response_body), http_status
+
+    except ValueError as exc:
+        return jsonify({"error": str(exc), "type": "ValidationError"}), 400
+
+    except Fault as exc:
+        logger.exception("/xyp/call: SOAP Fault")
+        return jsonify({
+            "error": str(exc),
+            "type": "SOAPFault",
+        }), 502
+
+    except (TransportError, ReqConnectionError) as exc:
+        logger.exception("/xyp/call: Transport error")
+        return jsonify({
+            "error": str(exc),
+            "type": "TransportError",
+        }), 502
+
+    except Exception as exc:
+        logger.exception("/xyp/call: Unhandled error, body=%s", body)
+        return jsonify({
+            "error": str(exc),
+            "type": type(exc).__name__,
+        }), 500
 
 
 @app.post("/vehicle")
@@ -205,71 +332,32 @@ def vehicle():
         }), 400
 
     params = {}
+    if plate_number:
+        params["plateNumber"] = plate_number
 
-    params["regnum"] = REGNUM
-    # if plate_number:
-    #     params["plateNumber"] = plate_number
+    if cabin_number:
+        params["cabinNumber"] = cabin_number
 
-    # if cabin_number:
-    #     params["cabinNumber"] = cabin_number
+    if certificat_number:
+        params["certificatNumber"] = certificat_number
 
-    # if certificat_number:
-    #     params["certificatNumber"] = certificat_number
+    if not params and REGNUM:
+        params["regnum"] = REGNUM
 
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
     try:
-        service = XypService(
-            TRANSPORT_WSDL,
-            ACCESS_TOKEN,
-            CERT_PATH,
-            KEY_PATH,
+        wsdl = body.get("wsdl") or build_wsdl_url(
+            DEFAULT_SERVICE_GROUP,
+            body.get("version"),
         )
-
-        result = service.call(
-            "WS100202_getPropertyList",
-            params,
-        )
-        # result = service.call(
-        #     "WS100611_getVehicleInfo",
-        #     params,
-        # )
-
-        result_dict = serialize_object(result)
-
-        logger.info(
-            "/vehicle: SOAP-аас ирсэн хариу=%s",
-            result_dict,
-        )
-
-        http_status, error_type = classify_xyp_result(result_dict)
-        response_body = {
-            "vehicle": result_dict,
-        }
-
-        if error_type:
-            response_body["error"] = {
-                "type": error_type,
-                "resultCode": (
-                    result_dict.get("resultCode")
-                    if isinstance(result_dict, dict)
-                    else None
-                ),
-                "message": (
-                    result_dict.get("resultMessage")
-                    if isinstance(result_dict, dict)
-                    else "Malformed XYP response",
-                ),
-            }
-
-            logger.warning(
-                "/vehicle: XYP non-success resultCode=%s errorType=%s httpStatus=%s",
-                response_body["error"]["resultCode"],
-                error_type,
-                http_status,
-            )
-
+        operation = str(body.get("operation") or "WS100401_getVehicleInfo").strip()
+        response_body, http_status = execute_xyp_call(wsdl, operation, params)
+        response_body["vehicle"] = response_body.pop("result")
         return jsonify(response_body), http_status
+
+    except ValueError as exc:
+        return jsonify({"error": str(exc), "type": "ValidationError"}), 400
 
     except Fault as exc:
         logger.exception("/vehicle: SOAP Fault")
