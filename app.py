@@ -54,7 +54,8 @@ def mask_token(token):
     return f"{token[:4]}{'*' * (len(token) - 8)}{token[-4:]}"
 
 
-TRANSPORT_WSDL = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
+TRANSPORT_WSDL = "https://xyp.gov.mn/property-1.3.0/ws?WSDL"
+# TRANSPORT_WSDL = "https://xyp.gov.mn/transport-1.3.0/ws?WSDL"
 
 
 class XypSign:
@@ -205,14 +206,15 @@ def vehicle():
 
     params = {}
 
-    if plate_number:
-        params["plateNumber"] = plate_number
+    params["regnum"] = REGNUM
+    # if plate_number:
+    #     params["plateNumber"] = plate_number
 
-    if cabin_number:
-        params["cabinNumber"] = cabin_number
+    # if cabin_number:
+    #     params["cabinNumber"] = cabin_number
 
-    if certificat_number:
-        params["certificatNumber"] = certificat_number
+    # if certificat_number:
+    #     params["certificatNumber"] = certificat_number
 
     logger.info("/vehicle: SOAP руу явуулах params=%s", params)
 
@@ -225,9 +227,13 @@ def vehicle():
         )
 
         result = service.call(
-            "WS100611_getVehicleInfo",
+            "WS100202_getPropertyList",
             params,
         )
+        # result = service.call(
+        #     "WS100611_getVehicleInfo",
+        #     params,
+        # )
 
         result_dict = serialize_object(result)
 
