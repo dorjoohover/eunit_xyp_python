@@ -225,7 +225,7 @@ def vehicle():
         )
 
         result = service.call(
-            "WS100401_getVehicleInfo",
+            "WS100611_getVehicleInfo",
             params,
         )
 
